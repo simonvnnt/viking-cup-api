@@ -4,7 +4,9 @@ namespace App\Controller\Api;
 
 use App\Business\RescuerBusiness;
 use App\Dto\CreateRescuerDto;
+use App\Dto\PersonRescuerDto;
 use App\Dto\RescuerDto;
+use App\Entity\Person;
 use App\Entity\Rescuer;
 use App\Entity\Round;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -58,25 +60,25 @@ class RescuerApiController extends AbstractController
         return new Response();
     }
 
-    #[Route('/{rescuer}', name: 'update', methods: ['PUT'])]
+    #[Route('/{person}', name: 'update', methods: ['PUT'])]
     public function updateRescuer(
         RescuerBusiness $rescuerBusiness,
-        Rescuer $rescuer,
-        #[MapRequestPayload] RescuerDto $rescuerDto
+        Person $person,
+        #[MapRequestPayload] PersonRescuerDto $personRescuerDto
     ): Response
     {
-        $rescuerBusiness->updatePersonRescuer($rescuer, $rescuerDto);
+        $rescuerBusiness->updatePersonRescuer($person, $personRescuerDto);
 
         return new Response();
     }
 
-    #[Route('/{rescuer}', name: 'delete', methods: ['DELETE'])]
-    public function deleteRescuer(
+    #[Route('/{person}', name: 'delete', methods: ['DELETE'])]
+    public function deletePersonRescuer(
         RescuerBusiness $rescuerBusiness,
-        Rescuer $rescuer
+        Person $person
     ): Response
     {
-        $rescuerBusiness->deleteRescuer($rescuer);
+        $rescuerBusiness->deletePersonRescuer($person);
 
         return new Response(null, Response::HTTP_NO_CONTENT);
     }

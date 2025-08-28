@@ -5,9 +5,11 @@ namespace App\Dto;
 class CreateRescuerDto
 {
     public function __construct(
+        // Person
         public int $personId,
-        public int $roundId,
-        public ?string $role = null,
+
+        // Rescuers
+        public array $rescuers = []
     )
     {}
 }

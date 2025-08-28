@@ -279,7 +279,8 @@ readonly class SponsorBusiness
     /**
      * Deletes sponsorships from the database.
      *
-     * @param Sponsorship[] $sponsorships
+     * @param Collection<int, Sponsorship> $sponsorships
+     * @param SponsorshipDto[] $sponsorshipsDto
      */
     private function deleteSponsorships(Collection $sponsorships, array $sponsorshipsDto): void
     {
