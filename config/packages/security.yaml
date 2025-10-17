@@ -45,6 +45,7 @@ security:
         - { path: ^/api/sponsors/public, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/events, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/rounds, roles: PUBLIC_ACCESS, methods: [GET] }
+        - { path: ^/api/rounds/current, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/roundCategories, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/categories, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/qualifying/ranking, roles: PUBLIC_ACCESS, methods: [GET] }

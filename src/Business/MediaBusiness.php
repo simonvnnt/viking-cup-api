@@ -339,7 +339,7 @@ readonly class MediaBusiness
     public function sendELearningEmails(Round $round): array
     {
         $errors = [];
-        $medias = $round->getMedias()->filter(fn(Media $media) => $media->isSelected() && $media->isSelectedMailSent());
+        $medias = $round->getMedias()->filter(fn(Media $media) => $media->isSelected() && $media->isSelectedMailSent() && !$media->isELearningMailSent());
 
         foreach ($medias->toArray() as $media) {
             try {
