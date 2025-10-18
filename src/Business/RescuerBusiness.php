@@ -85,7 +85,7 @@ readonly class RescuerBusiness
 
         // update rescuers
         $rescuersDto = $this->serializer->denormalize($rescuerDto->rescuers, RescuerDto::class . '[]');
-        $this->updateRescuers($person, $rescuersDto);
+        $this->updateRescuers($person, $rescuersDto, false);
 
         $this->em->flush();
 
@@ -110,12 +110,14 @@ readonly class RescuerBusiness
         $this->em->flush();
     }
 
-    public function updateRescuers(Person $person, array $rescuerDtos): void
+    public function updateRescuers(Person $person, array $rescuerDtos, bool $cleanExistent = true): void
     {
         $rescuers = $person->getRescuers();
 
-        // delete rescuers that are not in the DTO
-        $this->deleteRescuers($rescuers, $rescuerDtos);
+        if ($cleanExistent) {
+            // delete rescuers that are not in the DTO
+            $this->deleteRescuers($rescuers, $rescuerDtos);
+        }
 
         /** @var RescuerDto $rescuerDto */
         foreach ($rescuerDtos as $rescuerDto) {

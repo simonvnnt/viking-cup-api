@@ -3,6 +3,7 @@
 namespace App\Business;
 
 use App\Dto\CreateVolunteerDto;
+use App\Dto\PersonVolunteerDto;
 use App\Dto\VolunteerDto;
 use App\Entity\Volunteer;
 use App\Entity\Person;
@@ -11,6 +12,7 @@ use App\Repository\PersonRepository;
 use App\Repository\RoundDetailRepository;
 use App\Repository\RoundRepository;
 use App\Repository\VolunteerRoleRepository;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -72,79 +74,106 @@ readonly class VolunteerBusiness
         ];
     }
 
-    public function createVolunteer(CreateVolunteerDto $volunteerDto): Volunteer
+    /**
+     * Creates new volunteers associated with a person.
+     *
+     * @param CreateVolunteerDto $volunteerDto
+     *
+     * @return Person|null
+     * @throws Exception
+     */
+    public function createVolunteer(CreateVolunteerDto $volunteerDto): ?Person
     {
         $person = $this->personRepository->find($volunteerDto->personId);
         if ($volunteerDto->personId === null || $person === null) {
             throw new Exception('Person not found');
         }
 
-        $round = $this->roundRepository->find($volunteerDto->roundId);
-        if ($volunteerDto->roundId === null || $round === null) {
-            throw new Exception('Round not found');
-        }
+        $this->updatePersonRoundDetails($person, $volunteerDto->roundDetails);
+        $this->em->persist($person);
 
-        if (!empty($volunteerDto->roleId)) {
-            $role = $this->volunteerRoleRepository->find($volunteerDto->roleId);
-        }
+        // update volunteers
+        $volunteerDto = $this->serializer->denormalize($volunteerDto->volunteers, VolunteerDto::class . '[]');
+        $this->updateVolunteers($person, $volunteerDto, false);
 
-        // get round volunteer or create a new one
-        $volunteer = $person->getVolunteers()->filter(fn(Volunteer $volunteer) => $volunteer->getRound()?->getId() === $round->getId())->first();
-        if ($volunteer === false) {
-            $volunteer = new Volunteer();
-            $volunteer->setPerson($person)
-                ->setRound($round);
-        }
-        $volunteer->setRole($role ?? null);
-
-        $this->em->persist($volunteer);
         $this->em->flush();
 
-        return $volunteer;
+        return $person;
     }
 
-    public function updatePersonVolunteer(Volunteer $volunteer, VolunteerDto $volunteerDto): void
+    public function updatePersonVolunteer(Person $person, PersonVolunteerDto $personVolunteerDto): void
     {
         // update person
-        $person = $volunteer->getPerson();
+        $person->setFirstName($personVolunteerDto->firstName)
+            ->setLastName($personVolunteerDto->lastName)
+            ->setEmail($personVolunteerDto->email)
+            ->setPhone($personVolunteerDto->phone)
+            ->setWarnings($personVolunteerDto->warnings);
 
-        $person->setFirstName($volunteerDto->firstName)
-            ->setLastName($volunteerDto->lastName)
-            ->setEmail($volunteerDto->email)
-            ->setPhone($volunteerDto->phone)
-            ->setWarnings($volunteerDto->warnings);
-
-        $this->updatePersonPresence($person, $volunteerDto->presence);
+        $this->updatePersonRoundDetails($person, $personVolunteerDto->roundDetails);
 
         $this->em->persist($person);
 
         // update instagram link
-        if (!empty($volunteerDto->instagram)) {
-            $this->linkHelper->upsertInstagramLink($person, $volunteerDto->instagram);
+        if (!empty($personVolunteerDto->instagram)) {
+            $this->linkHelper->upsertInstagramLink($person, $personVolunteerDto->instagram);
         }
 
-        // update volunteer
-        if (!empty($volunteerDto->roleId)) {
-            $role = $this->volunteerRoleRepository->find($volunteerDto->roleId);
-        }
-        $volunteer->setRole($role ?? null);
-
-        $this->em->persist($volunteer);
+        // update volunteers
+        $volunteerDtos = $this->serializer->denormalize($personVolunteerDto->volunteers, VolunteerDto::class . '[]');
+        $this->updateVolunteers($person, $volunteerDtos);
 
         $this->em->flush();
     }
 
-    private function updatePersonPresence(Person $person, array $presence): void
+    public function updateVolunteers(Person $person, array $volunteerDtos, bool $cleanExistent = true): void
+    {
+        $volunteers = $person->getVolunteers();
+
+        if ($cleanExistent) {
+            // delete volunteers that are not in the DTO
+            $this->deleteVolunteers($volunteers, $volunteerDtos);
+        }
+
+        /** @var VolunteerDto $volunteerDto */
+        foreach ($volunteerDtos as $volunteerDto) {
+            if ($volunteerDto->id) {
+                $volunteer = $volunteers->filter(fn(Volunteer $s) => $s->getId() === $volunteerDto->id)->first();
+                if ($volunteer === false) {
+                    continue;
+                }
+            } else {
+                $volunteer = new Volunteer();
+                $volunteer->setPerson($person);
+            }
+
+            $round = $this->roundRepository->find($volunteerDto->roundId);
+            if ($round === null) {
+                continue;
+            }
+
+            $volunteer->setRound($round);
+
+            if (!empty($volunteerDto->roleId)) {
+                $role = $this->volunteerRoleRepository->find($volunteerDto->roleId);
+                $volunteer->setRole($role ?? null);
+            }
+
+            $this->em->persist($volunteer);
+        }
+    }
+
+    private function updatePersonRoundDetails(Person $person, array $roundDetails): void
     {
         // Supprimer les détails de rounds qui ne sont plus dans la liste de présence
         foreach ($person->getRoundDetails()->toArray() as $roundDetail) {
-            if (!in_array($roundDetail->getId(), $presence)) {
+            if (!in_array($roundDetail->getId(), $roundDetails)) {
                 $person->removeRoundDetail($roundDetail);
             }
         }
 
         // Ajouter les nouveaux détails de rounds
-        foreach ($presence as $roundDetailId) {
+        foreach ($roundDetails as $roundDetailId) {
             // Vérifier si le détail de round existe déjà
             if ($person->getRoundDetails()->exists(fn($key, $rd) => $rd->getId() === $roundDetailId)) {
                 continue;
@@ -153,13 +182,36 @@ readonly class VolunteerBusiness
             $roundDetail = $this->roundDetailRepository->find($roundDetailId);
             if ($roundDetail !== null) {
                 $person->addRoundDetail($roundDetail);
+
+                if (!$person->getRounds()->contains($roundDetail->getRound())) {
+                    $person->addRound($roundDetail->getRound());
+                }
             }
         }
     }
 
-    public function deleteVolunteer(Volunteer $volunteer): void
+    /**
+     * Deletes volunteers from the database.
+     *
+     * @param Collection<int, Volunteer> $volunteers
+     * @param VolunteerDto[] $volunteerDtos
+     */
+    private function deleteVolunteers(Collection $volunteers, array $volunteerDtos): void
     {
-        $this->em->remove($volunteer);
+        $volunteerDtoIds = array_map(fn(VolunteerDto $dto) => $dto->id, $volunteerDtos);
+        $volunteersToDelete = $volunteers->filter(fn(Volunteer $s) => !in_array($s->getId(), $volunteerDtoIds));
+
+        foreach ($volunteersToDelete as $volunteer) {
+            $this->em->remove($volunteer);
+        }
+    }
+
+    public function deleteVolunteer(Person $person): void
+    {
+        foreach ($person->getVolunteers()->toArray() as $volunteer) {
+            $this->em->remove($volunteer);
+        }
+
         $this->em->flush();
     }
 }

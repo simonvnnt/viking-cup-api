@@ -4,9 +4,8 @@ namespace App\Controller\Api;
 
 use App\Business\VolunteerBusiness;
 use App\Dto\CreateVolunteerDto;
-use App\Dto\VolunteerDto;
-use App\Entity\Volunteer;
-use App\Entity\Round;
+use App\Dto\PersonVolunteerDto;
+use App\Entity\Person;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -58,25 +57,25 @@ class VolunteerApiController extends AbstractController
         return new Response();
     }
 
-    #[Route('/{volunteer}', name: 'update', methods: ['PUT'])]
+    #[Route('/{person}', name: 'update', methods: ['PUT'])]
     public function updateVolunteer(
         VolunteerBusiness $volunteerBusiness,
-        Volunteer $volunteer,
-        #[MapRequestPayload] VolunteerDto $volunteerDto
+        Person $person,
+        #[MapRequestPayload] PersonVolunteerDto $volunteerDto
     ): Response
     {
-        $volunteerBusiness->updatePersonVolunteer($volunteer, $volunteerDto);
+        $volunteerBusiness->updatePersonVolunteer($person, $volunteerDto);
 
         return new Response();
     }
 
-    #[Route('/{volunteer}', name: 'delete', methods: ['DELETE'])]
+    #[Route('/{person}', name: 'delete', methods: ['DELETE'])]
     public function deleteVolunteer(
         VolunteerBusiness $volunteerBusiness,
-        Volunteer $volunteer
+        Person $person
     ): Response
     {
-        $volunteerBusiness->deleteVolunteer($volunteer);
+        $volunteerBusiness->deleteVolunteer($person);
 
         return new Response(null, Response::HTTP_NO_CONTENT);
     }
