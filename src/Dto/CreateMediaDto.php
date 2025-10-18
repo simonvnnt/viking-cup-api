@@ -5,10 +5,12 @@ namespace App\Dto;
 class CreateMediaDto
 {
     public function __construct(
+        // Person
         public int $personId,
-        public int $roundId,
-        public ?string $pilotFollow = null,
-        public bool $selected = false,
+        public array $roundDetails = [],
+
+        // Volunteers
+        public array $medias = []
     )
     {}
 }

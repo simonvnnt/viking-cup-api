@@ -199,7 +199,7 @@ readonly class VolunteerBusiness
     private function deleteVolunteers(Collection $volunteers, array $volunteerDtos): void
     {
         $volunteerDtoIds = array_map(fn(VolunteerDto $dto) => $dto->id, $volunteerDtos);
-        $volunteersToDelete = $volunteers->filter(fn(Volunteer $s) => !in_array($s->getId(), $volunteerDtoIds));
+        $volunteersToDelete = $volunteers->filter(fn(Volunteer $v) => !in_array($v->getId(), $volunteerDtoIds));
 
         foreach ($volunteersToDelete as $volunteer) {
             $this->em->remove($volunteer);

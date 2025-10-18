@@ -4,13 +4,12 @@ namespace App\Controller\Api;
 
 use App\Business\MediaBusiness;
 use App\Dto\CreateMediaDto;
-use App\Dto\MediaDto;
+use App\Dto\MediaPublicDto;
 use App\Dto\MediaSelectionDto;
+use App\Dto\PersonMediaDto;
 use App\Entity\Media;
+use App\Entity\Person;
 use App\Entity\Round;
-use App\Repository\PersonRepository;
-use App\Repository\RoundRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -88,7 +87,7 @@ class MediaApiController extends AbstractController
     ): Response
     {
         $mediaDto = $request->request->get('media');
-        $mediaDto = $serializer->deserialize($mediaDto, MediaDto::class, 'json');
+        $mediaDto = $serializer->deserialize($mediaDto, MediaPublicDto::class, 'json');
 
         $mediaBusiness->createPersonMedia($mediaDto, $insuranceFile, !empty($bookFile) ? $bookFile : null);
 
@@ -98,48 +97,37 @@ class MediaApiController extends AbstractController
     #[Route('', name: 'create', methods: ['POST'])]
     public function createMedia(
         MediaBusiness $mediaBusiness,
-        PersonRepository $personRepository,
-        RoundRepository $roundRepository,
-        EntityManagerInterface $em,
         Request $request,
         SerializerInterface $serializer,
-        #[MapUploadedFile] UploadedFile|array $insuranceFile,
-        #[MapUploadedFile] UploadedFile|array $bookFile
+        #[MapUploadedFile] UploadedFile|array $insuranceFiles,
+        #[MapUploadedFile] UploadedFile|array $bookFiles
     ): Response
     {
         $mediaDto = $request->request->get('media');
         $mediaDto = $serializer->deserialize($mediaDto, CreateMediaDto::class, 'json');
 
-        $person = $personRepository->find($mediaDto->personId);
-        if ($mediaDto->personId === null || $person === null) {
-            throw new \Exception('Person not found');
-        }
-
-        $round = $roundRepository->find($mediaDto->roundId);
-        if ($mediaDto->roundId === null || $round === null) {
-            throw new \Exception('Round not found');
-        }
-
-        $mediaBusiness->createMedia($person, $round, $mediaDto->pilotFollow, !empty($insuranceFile) ? $insuranceFile : null, !empty($bookFile) ? $bookFile : null);
-        $em->flush();
+        $mediaBusiness->createMedia($mediaDto, $insuranceFiles, $bookFiles);
 
         return new Response();
     }
 
-    #[Route('/{media}', name: 'update', methods: ['POST'])]
+    #[Route('/{person}', name: 'update', methods: ['POST'])]
     public function updateMedia(
         MediaBusiness $mediaBusiness,
         Request $request,
         SerializerInterface $serializer,
-        Media $media,
-        #[MapUploadedFile] UploadedFile|array $insuranceFile,
-        #[MapUploadedFile] UploadedFile|array $bookFile
+        Person $person,
+        #[MapUploadedFile] UploadedFile|array $insuranceFiles,
+        #[MapUploadedFile] UploadedFile|array $bookFiles
     ): Response
     {
         $mediaDto = $request->request->get('media');
-        $mediaDto = $serializer->deserialize($mediaDto, MediaDto::class, 'json');
+        $mediaDto = $serializer->deserialize($mediaDto, PersonMediaDto::class, 'json');
 
-        $mediaBusiness->updatePersonMedia($media, $mediaDto, !empty($insuranceFile) ? $insuranceFile : null, !empty($bookFile) ? $bookFile : null);
+        $insuranceFiles = $insuranceFiles instanceof UploadedFile ? [$insuranceFiles] : $insuranceFiles;
+        $bookFiles = $bookFiles instanceof UploadedFile ? [$bookFiles] : $bookFiles;
+
+        $mediaBusiness->updatePersonMedia($person, $mediaDto, $insuranceFiles, $bookFiles);
 
         return new Response();
     }
