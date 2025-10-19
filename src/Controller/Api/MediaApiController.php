@@ -24,6 +24,89 @@ use Symfony\Component\Serializer\SerializerInterface;
 #[Route('/api/medias', name: 'api_medias')]
 class MediaApiController extends AbstractController
 {
+    #[Route('/public', name: 'create_public', methods: ['POST'])]
+    public function createMediaPublic(
+        MediaBusiness $mediaBusiness,
+        Request $request,
+        SerializerInterface $serializer,
+        #[MapUploadedFile] UploadedFile $insuranceFile,
+        #[MapUploadedFile] UploadedFile|array $bookFile
+    ): Response
+    {
+        $mediaDto = $request->request->get('media');
+        $mediaDto = $serializer->deserialize($mediaDto, MediaPublicDto::class, 'json');
+
+        $mediaBusiness->createPersonMedia($mediaDto, $insuranceFile, !empty($bookFile) ? $bookFile : null);
+
+        return new Response();
+    }
+
+    #[Route('/public/{uniqueId}', name: 'get_by_uid', methods: ['GET'])]
+    public function getMedia(
+        MediaBusiness $mediaBusiness,
+        string $uniqueId
+    ): JsonResponse
+    {
+        $media = $mediaBusiness->getMediaByUniqueId($uniqueId);
+
+        if (!$media) {
+            return new JsonResponse(['message' => 'Media not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json($media, Response::HTTP_OK, [], ['groups' => ['media', 'mediaRound', 'round', 'roundDetails', 'roundDetail', 'roundEvent', 'event']]);
+    }
+
+    #[Route('/public/generate-pass/{media}', name: 'generate_pass', methods: ['GET'])]
+    public function generatePass(
+        MediaBusiness $mediaBusiness,
+        Media $media,
+        #[MapQueryParameter] string $uniqueId
+    ): Response
+    {
+        if ($media->getPerson()->getUniqueId() !== $uniqueId) {
+            throw new \Exception('Unique ID does not match the media person unique ID');
+        }
+        $pdf = $mediaBusiness->generatePass($media);
+
+        return new Response($pdf, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'filename="pass_' . str_replace('.', '_', $uniqueId) . '.pdf"']);
+    }
+
+    #[Route('/public/briefing-seen/{media}', name: 'set_briefing_seen', methods: ['PUT'])]
+    public function briefingSeen(
+        MediaBusiness $mediaBusiness,
+        Media $media,
+        #[MapQueryParameter] string $uniqueId
+    ): Response
+    {
+        if ($media->getPerson()->getUniqueId() !== $uniqueId) {
+            throw new \Exception('Unique ID does not match the media person unique ID');
+        }
+
+        $mediaBusiness->briefingSeen($media);
+
+        return new Response();
+    }
+
+    #[Route('/public/pass-generated/{media}', name: 'set_pass_generated', methods: ['PUT'])]
+    public function passGenerated(
+        MediaBusiness $mediaBusiness,
+        Media $media,
+        #[MapQueryParameter] string $uniqueId
+    ): Response
+    {
+        if ($media->getPerson()->getUniqueId() !== $uniqueId) {
+            throw new \Exception('Unique ID does not match the media person unique ID');
+        }
+        if (!$media->isBriefingSeen()) {
+            throw new \Exception('Briefing must be seen before generating pass');
+        }
+
+        $mediaBusiness->passGenerated($media);
+
+        return new Response();
+    }
+
+
     #[Route('', name: 'list', methods: ['GET'])]
     public function getMedias(
         MediaBusiness $mediaBusiness,
@@ -60,38 +143,6 @@ class MediaApiController extends AbstractController
         );
 
         return $this->json($medias, Response::HTTP_OK, [], ['groups' => ['media', 'mediaRound', 'round', 'roundDetails', 'roundDetail', 'roundEvent', 'event']]);
-    }
-
-    #[Route('/public/{uniqueId}', name: 'get_by_uid', methods: ['GET'])]
-    public function getMedia(
-        MediaBusiness $mediaBusiness,
-        string $uniqueId
-    ): JsonResponse
-    {
-        $media = $mediaBusiness->getMediaByUniqueId($uniqueId);
-
-        if (!$media) {
-            return new JsonResponse(['message' => 'Media not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        return $this->json($media, Response::HTTP_OK, [], ['groups' => ['media', 'mediaRound', 'round', 'roundDetails', 'roundDetail', 'roundEvent', 'event']]);
-    }
-
-    #[Route('/public', name: 'create', methods: ['POST'])]
-    public function createMediaPublic(
-        MediaBusiness $mediaBusiness,
-        Request $request,
-        SerializerInterface $serializer,
-        #[MapUploadedFile] UploadedFile $insuranceFile,
-        #[MapUploadedFile] UploadedFile|array $bookFile
-    ): Response
-    {
-        $mediaDto = $request->request->get('media');
-        $mediaDto = $serializer->deserialize($mediaDto, MediaPublicDto::class, 'json');
-
-        $mediaBusiness->createPersonMedia($mediaDto, $insuranceFile, !empty($bookFile) ? $bookFile : null);
-
-        return new Response();
     }
 
     #[Route('', name: 'create', methods: ['POST'])]
@@ -164,56 +215,6 @@ class MediaApiController extends AbstractController
         $media = $mediaBusiness->deleteMediaBook($media);
 
         return $this->json($media, Response::HTTP_OK, [], ['groups' => ['media', 'mediaRound', 'round', 'roundDetails', 'roundDetail']]);
-    }
-
-    #[Route('/public/generate-pass/{media}', name: 'generate_pass', methods: ['GET'])]
-    public function generatePass(
-        MediaBusiness $mediaBusiness,
-        Media $media,
-        #[MapQueryParameter] string $uniqueId
-    ): Response
-    {
-        if ($media->getPerson()->getUniqueId() !== $uniqueId) {
-            throw new \Exception('Unique ID does not match the media person unique ID');
-        }
-        $pdf = $mediaBusiness->generatePass($media);
-
-        return new Response($pdf, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'filename="pass_' . str_replace('.', '_', $uniqueId) . '.pdf"']);
-    }
-
-    #[Route('/public/briefing-seen/{media}', name: 'set_briefing_seen', methods: ['PUT'])]
-    public function briefingSeen(
-        MediaBusiness $mediaBusiness,
-        Media $media,
-        #[MapQueryParameter] string $uniqueId
-    ): Response
-    {
-        if ($media->getPerson()->getUniqueId() !== $uniqueId) {
-            throw new \Exception('Unique ID does not match the media person unique ID');
-        }
-
-        $mediaBusiness->briefingSeen($media);
-
-        return new Response();
-    }
-
-    #[Route('/public/pass-generated/{media}', name: 'set_pass_generated', methods: ['PUT'])]
-    public function passGenerated(
-        MediaBusiness $mediaBusiness,
-        Media $media,
-        #[MapQueryParameter] string $uniqueId
-    ): Response
-    {
-        if ($media->getPerson()->getUniqueId() !== $uniqueId) {
-            throw new \Exception('Unique ID does not match the media person unique ID');
-        }
-        if (!$media->isBriefingSeen()) {
-            throw new \Exception('Briefing must be seen before generating pass');
-        }
-
-        $mediaBusiness->passGenerated($media);
-
-        return new Response();
     }
 
     #[Route('/send-selected-email/{round}', name: 'send_selected_email')]
