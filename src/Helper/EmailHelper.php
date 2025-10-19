@@ -19,10 +19,10 @@ readonly class EmailHelper
     public function sendPreselectedEmail(string $email, Round $round, string $firstName): void
     {
         $subject = $this->config->getValue('EMAIL_SUBJECT_PRESELECTED');
-        $subject = $this->environment->createTemplate($subject)->render(["roundName" => $round->getName()]);
+        $subject = $this->environment->createTemplate($subject)->render(["roundName" => $round->getName(), 'eventYear' => $round->getEvent()?->getYear()]);
 
         $template = $this->config->getValue('EMAIL_TEMPLATE_PRESELECTED');
-        $template = $this->environment->createTemplate($template)->render(["firstName" => $firstName]);
+        $template = $this->environment->createTemplate($template)->render(["firstName" => $firstName, 'eventYear' => $round->getEvent()?->getYear()]);
 
 
         $emailDto = new EmailDto(
@@ -39,10 +39,10 @@ readonly class EmailHelper
     public function sendSelectedEmail(string $email, Round $round, string $firstName): void
     {
         $subject = $this->config->getValue('EMAIL_SUBJECT_SELECTED');
-        $subject = $this->environment->createTemplate($subject)->render(["roundName" => $round->getName()]);
+        $subject = $this->environment->createTemplate($subject)->render(["roundName" => $round->getName(), 'eventYear' => $round->getEvent()?->getYear()]);
 
         $template = $this->config->getValue('EMAIL_TEMPLATE_SELECTED');
-        $template = $this->environment->createTemplate($template)->render(["firstName" => $firstName]);
+        $template = $this->environment->createTemplate($template)->render(["firstName" => $firstName, 'eventYear' => $round->getEvent()?->getYear()]);
 
         $emailDto = new EmailDto(
             fromName: 'Viking Cup',
@@ -60,10 +60,10 @@ readonly class EmailHelper
         $mediaUrl = $this->config->getValue('MEDIA_URL');
 
         $subject = $this->config->getValue('EMAIL_SUBJECT_ELEARNING');
-        $subject = $this->environment->createTemplate($subject)->render(["roundName" => $round->getName()]);
+        $subject = $this->environment->createTemplate($subject)->render(["roundName" => $round->getName(), 'eventYear' => $round->getEvent()?->getYear()]);
 
         $template = $this->config->getValue('EMAIL_TEMPLATE_ELEARNING');
-        $template = $this->environment->createTemplate($template)->render(["firstName" => $firstName, "mediaUrl" => $mediaUrl, "uniqueId" => $uniqueId]);
+        $template = $this->environment->createTemplate($template)->render(["firstName" => $firstName, "mediaUrl" => $mediaUrl, "uniqueId" => $uniqueId, 'eventYear' => $round->getEvent()?->getYear()]);
 
         $emailDto = new EmailDto(
             fromName: 'Viking Cup',
