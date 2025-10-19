@@ -133,6 +133,12 @@ class Person
     #[ORM\OneToMany(targetEntity: Visitor::class, mappedBy: 'person')]
     private Collection $visitors;
 
+    /**
+     * @var Collection<int, Sponsor>
+     */
+    #[ORM\OneToMany(targetEntity: Sponsor::class, mappedBy: 'contact')]
+    private Collection $sponsors;
+
     public function __construct()
     {
         $this->links = new ArrayCollection();
@@ -143,6 +149,7 @@ class Person
         $this->volunteers = new ArrayCollection();
         $this->rescuers = new ArrayCollection();
         $this->visitors = new ArrayCollection();
+        $this->sponsors = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -574,6 +581,36 @@ class Person
             // set the owning side to null (unless already changed)
             if ($visitor->getPerson() === $this) {
                 $visitor->setPerson(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Sponsor>
+     */
+    public function getSponsors(): Collection
+    {
+        return $this->sponsors;
+    }
+
+    public function addSponsor(Sponsor $sponsor): static
+    {
+        if (!$this->sponsors->contains($sponsor)) {
+            $this->sponsors->add($sponsor);
+            $sponsor->setContact($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSponsor(Sponsor $sponsor): static
+    {
+        if ($this->sponsors->removeElement($sponsor)) {
+            // set the owning side to null (unless already changed)
+            if ($sponsor->getContact() === $this) {
+                $sponsor->setContact(null);
             }
         }
 

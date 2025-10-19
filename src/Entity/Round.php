@@ -89,6 +89,12 @@ class Round
     #[ORM\OneToMany(targetEntity: Visitor::class, mappedBy: 'round')]
     private Collection $visitors;
 
+    /**
+     * @var Collection<int, Sponsorship>
+     */
+    #[ORM\OneToMany(targetEntity: Sponsorship::class, mappedBy: 'round')]
+    private Collection $sponsorships;
+
     public function __construct()
     {
         $this->roundDetails = new ArrayCollection();
@@ -100,6 +106,7 @@ class Round
         $this->volunteers = new ArrayCollection();
         $this->rescuers = new ArrayCollection();
         $this->visitors = new ArrayCollection();
+        $this->sponsorships = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -416,6 +423,36 @@ class Round
             // set the owning side to null (unless already changed)
             if ($visitor->getRound() === $this) {
                 $visitor->setRound(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Sponsorship>
+     */
+    public function getSponsorships(): Collection
+    {
+        return $this->sponsorships;
+    }
+
+    public function addSponsorship(Sponsorship $sponsorship): static
+    {
+        if (!$this->sponsorships->contains($sponsorship)) {
+            $this->sponsorships->add($sponsorship);
+            $sponsorship->setRound($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSponsorship(Sponsorship $sponsorship): static
+    {
+        if ($this->sponsorships->removeElement($sponsorship)) {
+            // set the owning side to null (unless already changed)
+            if ($sponsorship->getRound() === $this) {
+                $sponsorship->setRound(null);
             }
         }
 

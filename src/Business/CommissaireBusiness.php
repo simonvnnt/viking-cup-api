@@ -3,17 +3,16 @@
 namespace App\Business;
 
 use App\Dto\CommissaireDto;
+use App\Dto\PersonCommissaireDto;
 use App\Dto\CreateCommissaireDto;
 use App\Entity\Commissaire;
 use App\Entity\Person;
 use App\Repository\CommissaireTypeRepository;
 use App\Repository\PersonRepository;
-use App\Repository\RoundDetailRepository;
 use App\Repository\RoundRepository;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
-use Pagerfanta\Doctrine\ORM\QueryAdapter;
-use Pagerfanta\Pagerfanta;
 use Symfony\Component\Serializer\SerializerInterface;
 
 readonly class CommissaireBusiness
@@ -21,7 +20,6 @@ readonly class CommissaireBusiness
     public function __construct(
         private PersonRepository       $personRepository,
         private RoundRepository        $roundRepository,
-        private RoundDetailRepository  $roundDetailRepository,
         private CommissaireTypeRepository $commissaireTypeRepository,
         private SerializerInterface    $serializer,
         private EntityManagerInterface $em
@@ -44,14 +42,8 @@ readonly class CommissaireBusiness
         ?bool   $isFlag = null
     ): array
     {
-        $persons = $this->personRepository->findCommissairesPaginated($sort, $order, $name, $email, $phone, $licenceNumber, $asaCode, $typeId, $isFlag);
-
-        $adapter = new QueryAdapter($persons, false, false);
-        $pager = new Pagerfanta($adapter);
-        $totalItems = $pager->count();
-        $pager->setMaxPerPage($limit);
-        $pager->setCurrentPage($page);
-        $persons = $pager->getCurrentPageResults();
+        $personIdsTotal = $this->personRepository->findFilteredCommissairePersonIdsPaginated($page, $limit, $sort, $order, $eventId, $roundId, $name, $email, $phone, $licenceNumber, $asaCode, $typeId, $isFlag);
+        $persons = $this->personRepository->findPersonsByIds($personIdsTotal['items']);
 
         $commissairePersons = [];
         /** @var Person $person */
@@ -63,7 +55,7 @@ readonly class CommissaireBusiness
                     (!$roundId || $commissaire->getRound()->getId() === $roundId) &&
                     (!$licenceNumber || str_contains($commissaire->getLicenceNumber(), $licenceNumber) !== false) &&
                     (!$asaCode || str_contains($commissaire->getAsaCode(), $asaCode) !== false) &&
-                    (!$typeId || $commissaire->getType()->getId() === $typeId) &&
+                    (!$typeId || $commissaire->getType()?->getId() === $typeId) &&
                     ($isFlag === null || $commissaire->isFlag() === $isFlag);
             });
 
@@ -76,7 +68,7 @@ readonly class CommissaireBusiness
 
         return [
             'pagination' => [
-                'totalItems' => $totalItems,
+                'totalItems' => $personIdsTotal['total'],
                 'pageIndex' => $page,
                 'itemsPerPage' => $limit
             ],
@@ -84,101 +76,108 @@ readonly class CommissaireBusiness
         ];
     }
 
-    public function createCommissaire(CreateCommissaireDto $commissaireDto): ?Commissaire
+    /**
+     * Creates a new commissaire.
+     *
+     * @param CreateCommissaireDto $commissaireDto The data transfer object containing the commissaire information.
+     *
+     * @return Person|null The created commissaires person.
+     * @throws Exception
+     */
+    public function createCommissaire(CreateCommissaireDto $commissaireDto): ?Person
     {
         $person = $this->personRepository->find($commissaireDto->personId);
         if ($commissaireDto->personId === null || $person === null) {
             throw new Exception('Person not found');
         }
 
-        $round = $this->roundRepository->find($commissaireDto->roundId);
-        if ($commissaireDto->roundId === null || $round === null) {
-            throw new Exception('Round not found');
-        }
+        // update commissaires
+        $commissairesDto = $this->serializer->denormalize($commissaireDto->commissaires, CommissaireDto::class . '[]');
+        $this->updateCommissaires($person, $commissairesDto);
 
-        if (!empty($commissaireDto->typeId)) {
-            $commissaireType = $this->commissaireTypeRepository->find($commissaireDto->typeId);
-        }
-
-        // get round commissaire or create a new one
-        $commissaire = $person->getCommissaires()->filter(fn(Commissaire $commissaire) => $commissaire->getRound()?->getId() === $round->getId())->first();
-        if ($commissaire === false) {
-            $commissaire = new Commissaire();
-            $commissaire->setPerson($person)
-                ->setRound($round);
-        }
-
-        $commissaire->setType($commissaireType ?? null)
-            ->setLicenceNumber($commissaireDto->licenceNumber)
-            ->setAsaCode($commissaireDto->asaCode)
-            ->setIsFlag($commissaireDto->isFlag);
-
-        $this->em->persist($commissaire);
         $this->em->flush();
 
-        return $commissaire;
+        return $person;
     }
 
-    public function updatePersonCommissaire(Commissaire $commissaire, CommissaireDto $commissaireDto): void
+    public function updatePersonCommissaire(Person $person, PersonCommissaireDto $personCommissaireDto): void
     {
         // update person
-        $person = $commissaire->getPerson();
-
-        $person->setFirstName($commissaireDto->firstName)
-            ->setLastName($commissaireDto->lastName)
-            ->setEmail($commissaireDto->email)
-            ->setPhone($commissaireDto->phone)
-            ->setWarnings($commissaireDto->warnings);
-
-        $this->updatePersonPresence($person, $commissaireDto->presence);
+        $person->setFirstName($personCommissaireDto->firstName)
+            ->setLastName($personCommissaireDto->lastName)
+            ->setEmail($personCommissaireDto->email)
+            ->setPhone($personCommissaireDto->phone)
+            ->setWarnings($personCommissaireDto->warnings);
 
         $this->em->persist($person);
 
-        if (!empty($commissaireDto->typeId)) {
-            $commissaireType = $this->commissaireTypeRepository->find($commissaireDto->typeId);
-        }
-
-        // update commissaire
-        $commissaire->setType($commissaireType ?? null)
-            ->setLicenceNumber($commissaireDto->licenceNumber)
-            ->setAsaCode($commissaireDto->asaCode)
-            ->setIsFlag($commissaireDto->isFlag);
-
-        $this->em->persist($commissaire);
+        // update commissaires
+        $commissairesDto = $this->serializer->denormalize($personCommissaireDto->commissaires, CommissaireDto::class . '[]');
+        $this->updateCommissaires($person, $commissairesDto);
 
         $this->em->flush();
     }
 
-    private function updatePersonPresence(Person $person, array $presence): void
+    public function updateCommissaires(Person $person, array $commissaireDtos): void
     {
-        // Supprimer les détails de rounds qui ne sont plus dans la liste de présence
-        foreach ($person->getRoundDetails()->toArray() as $roundDetail) {
-            if (!in_array($roundDetail->getId(), $presence)) {
-                $person->removeRoundDetail($roundDetail);
-            }
-        }
+        $commissaires = $person->getCommissaires();
 
-        // Ajouter les nouveaux détails de rounds
-        foreach ($presence as $roundDetailId) {
-            // Vérifier si le détail de round existe déjà
-            if ($person->getRoundDetails()->exists(fn($key, $rd) => $rd->getId() === $roundDetailId)) {
+        // delete commissaires that are not in the DTO
+        $this->deleteCommissaires($commissaires, $commissaireDtos);
+
+        /** @var CommissaireDto $commissaireDto */
+        foreach ($commissaireDtos as $commissaireDto) {
+            if ($commissaireDto->id) {
+                $commissaire = $commissaires->filter(fn(Commissaire $s) => $s->getId() === $commissaireDto->id)->first();
+                if ($commissaire === false) {
+                    continue;
+                }
+            } else {
+                $commissaire = new Commissaire();
+                $commissaire->setPerson($person);
+            }
+
+            $round = $this->roundRepository->find($commissaireDto->roundId);
+            if ($round === null) {
                 continue;
             }
 
-            $roundDetail = $this->roundDetailRepository->find($roundDetailId);
-            if ($roundDetail !== null) {
-                $person->addRoundDetail($roundDetail);
-
-                if (!$person->getRounds()->contains($roundDetail->getRound())) {
-                    $person->addRound($roundDetail->getRound());
-                }
+            if (!empty($personCommissaireDto->typeId)) {
+                $commissaireType = $this->commissaireTypeRepository->find($personCommissaireDto->typeId);
             }
+
+            $commissaire->setRound($round)
+                ->setType($commissaireType ?? null)
+                ->setLicenceNumber($commissaireDto->licenceNumber)
+                ->setAsaCode($commissaireDto->asaCode)
+                ->setIsFlag($commissaireDto->isFlag);
+
+            $this->em->persist($commissaire);
         }
     }
 
-    public function deleteCommissaire(Commissaire $commissaire): void
+    /**
+     * Deletes commissaires from the database.
+     *
+     * @param Collection<int, Commissaire> $commissaires
+     * @param CommissaireDto[] $commissaireDtos
+     */
+    private function deleteCommissaires(Collection $commissaires, array $commissaireDtos): void
     {
-        $this->em->remove($commissaire);
+        $commissaireDtoIds = array_map(fn(CommissaireDto $dto) => $dto->id, $commissaireDtos);
+        $commissairesToDelete = $commissaires->filter(fn(Commissaire $s) => !in_array($s->getId(), $commissaireDtoIds));
+
+        foreach ($commissairesToDelete as $commissaire) {
+            $this->em->remove($commissaire);
+        }
+    }
+
+    public function deletePersonCommissaires(Person $person): void
+    {
+        foreach ($person->getCommissaires()->toArray() as $commissaire) {
+            $this->em->remove($commissaire);
+        }
+
         $this->em->flush();
     }
 }

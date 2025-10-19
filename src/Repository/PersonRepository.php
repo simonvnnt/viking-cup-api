@@ -83,9 +83,13 @@ class PersonRepository extends ServiceEntityRepository
         return $qb;
     }
 
-    public function findMediasPaginated(
+    public function findFilteredMediaPersonIdsPaginated(
+        int     $page = 1,
+        int     $limit = 50,
         ?string $sort = null,
         ?string $order = null,
+        ?int    $eventId = null,
+        ?int    $roundId = null,
         ?string $name = null,
         ?string $email = null,
         ?string $phone = null,
@@ -94,13 +98,23 @@ class PersonRepository extends ServiceEntityRepository
         ?bool   $eLearningMailSent = null,
         ?bool   $briefingSeen = null,
         ?bool   $generatePass = null
-    ): QueryBuilder
+    ): array
     {
         $order = $order ?? 'ASC';
 
         $qb = $this->createQueryBuilder('p')
+            ->select('DISTINCT p.id')
             ->innerJoin('p.medias', 'm');
 
+        if ($eventId !== null) {
+            $qb->innerJoin('m.round', 'r')
+                ->andWhere('r.event = :eventId')
+                ->setParameter('eventId', $eventId);
+        }
+        if ($roundId !== null) {
+            $qb->andWhere('m.round = :roundId')
+                ->setParameter('roundId', $roundId);
+        }
         if ($name !== null) {
             $qb->andWhere('p.firstName LIKE :name OR p.lastName LIKE :name')
                 ->setParameter('name', '%' . $name . '%');
@@ -149,10 +163,24 @@ class PersonRepository extends ServiceEntityRepository
                 break;
         }
 
-        return $qb;
+        // Compte total des résultats
+        $countQb = clone $qb;
+        $countQb->select('COUNT(DISTINCT p.id)');
+        $total = (int) $countQb->getQuery()->getSingleScalarResult();
+
+        // Récupération des résultats paginés
+        $qb->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+
+        return [
+            'items' => array_column($qb->getQuery()->getResult(), 'id'),
+            'total' => $total,
+        ];
     }
 
-    public function findPilotsPaginated(
+    public function findFilteredPilotPersonIdsPaginated(
+        int     $page = 1,
+        int     $limit = 50,
         ?string $sort = null,
         ?string $order = null,
         ?string $name = null,
@@ -164,12 +192,14 @@ class PersonRepository extends ServiceEntityRepository
         ?string $number = null,
         ?bool   $ffsaLicensee = null,
         ?string $ffsaNumber = null,
-        ?string $nationality = null
-    ): QueryBuilder
+        ?string $nationality = null,
+        ?bool   $receivedWindscreenBand = null
+    ): array
     {
         $order = $order ?? 'ASC';
 
         $qb = $this->createQueryBuilder('p')
+            ->select('DISTINCT p.id')
             ->innerJoin('p.pilot', 'pi')
             ->leftJoin('pi.pilotEvents', 'pe', 'WITH', 'pe.event = :event')
             ->setParameter('event', $eventId);
@@ -214,6 +244,10 @@ class PersonRepository extends ServiceEntityRepository
             $qb->andWhere('LOWER(p.nationality) LIKE :nationality')
                 ->setParameter('nationality', '%' . $this->normalizeName($nationality) . '%');
         }
+        if ($eventId !== null && $receivedWindscreenBand !== null) {
+            $qb->andWhere('pe.receiveWindscreenBand = :receivedWindscreenBand')
+                ->setParameter('receivedWindscreenBand', $receivedWindscreenBand);
+        }
 
 
         switch ($sort) {
@@ -241,13 +275,29 @@ class PersonRepository extends ServiceEntityRepository
             case 'nationality':
                 $qb->orderBy('p.nationality', $order);
                 break;
-
+            case 'receivedWindscreenBand':
+                $qb->orderBy('pe.receiveWindscreenBand', $order);
+                break;
         }
 
-        return $qb;
+        // Compte total des résultats
+        $countQb = clone $qb;
+        $countQb->select('COUNT(DISTINCT p.id)');
+        $total = (int) $countQb->getQuery()->getSingleScalarResult();
+
+        // Récupération des résultats paginés
+        $qb->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+
+        return [
+            'items' => array_column($qb->getQuery()->getResult(), 'id'),
+            'total' => $total,
+        ];
     }
 
-    public function findMembersPaginated(
+    public function findFilteredMemberPersonIdsPaginated(
+        int     $page = 1,
+        int     $limit = 50,
         ?string $sort = null,
         ?string $order = null,
         ?string $name = null,
@@ -255,11 +305,12 @@ class PersonRepository extends ServiceEntityRepository
         ?string $phone = null,
         ?string $roleAsso = null,
         ?string $roleVcup = null
-    ): QueryBuilder
+    ): array
     {
         $order = $order ?? 'ASC';
 
         $qb = $this->createQueryBuilder('p')
+            ->select('DISTINCT p.id')
             ->innerJoin('p.member', 'm');
 
         if ($name !== null) {
@@ -304,12 +355,28 @@ class PersonRepository extends ServiceEntityRepository
                 break;
         }
 
-        return $qb;
+        // Compte total des résultats
+        $countQb = clone $qb;
+        $countQb->select('COUNT(DISTINCT p.id)');
+        $total = (int) $countQb->getQuery()->getSingleScalarResult();
+
+        // Récupération des résultats paginés
+        $qb->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+
+        return [
+            'items' => array_column($qb->getQuery()->getResult(), 'id'),
+            'total' => $total,
+        ];
     }
 
-    public function findCommissairesPaginated(
+    public function findFilteredCommissairePersonIdsPaginated(
+        int     $page = 1,
+        int     $limit = 50,
         ?string $sort = null,
         ?string $order = null,
+        ?int    $eventId = null,
+        ?int    $roundId = null,
         ?string $name = null,
         ?string $email = null,
         ?string $phone = null,
@@ -317,13 +384,23 @@ class PersonRepository extends ServiceEntityRepository
         ?string $asaCode = null,
         ?int    $typeId = null,
         ?bool   $isFlag = null
-    ): QueryBuilder
+    ): array
     {
         $order = $order ?? 'ASC';
 
         $qb = $this->createQueryBuilder('p')
+            ->select('DISTINCT p.id')
             ->innerJoin('p.commissaires', 'c');
 
+        if ($eventId !== null) {
+            $qb->innerJoin('c.round', 'r')
+                ->andWhere('r.event = :eventId')
+                ->setParameter('eventId', $eventId);
+        }
+        if ($roundId !== null) {
+            $qb->andWhere('c.round = :roundId')
+                ->setParameter('roundId', $roundId);
+        }
         if ($name !== null) {
             $qb->andWhere('p.firstName LIKE :name OR p.lastName LIKE :name')
                 ->setParameter('name', '%' . $name . '%');
@@ -380,23 +457,49 @@ class PersonRepository extends ServiceEntityRepository
                 break;
         }
 
-        return $qb;
+        // Compte total des résultats
+        $countQb = clone $qb;
+        $countQb->select('COUNT(DISTINCT p.id)');
+        $total = (int) $countQb->getQuery()->getSingleScalarResult();
+
+        // Récupération des résultats paginés
+        $qb->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+
+        return [
+            'items' => array_column($qb->getQuery()->getResult(), 'id'),
+            'total' => $total,
+        ];
     }
 
-    public function findVolunteersPaginated(
+    public function findFilteredVolunteerPersonIdsPaginated(
+        int     $page = 1,
+        int     $limit = 50,
         ?string $sort = null,
         ?string $order = null,
+        ?int    $eventId = null,
+        ?int    $roundId = null,
         ?string $name = null,
         ?string $email = null,
         ?string $phone = null,
         ?int    $roleId = null
-    ): QueryBuilder
+    ): array
     {
         $order = $order ?? 'ASC';
 
         $qb = $this->createQueryBuilder('p')
+            ->select('DISTINCT p.id')
             ->innerJoin('p.volunteers', 'v');
 
+        if ($eventId !== null) {
+            $qb->innerJoin('v.round', 'r')
+                ->andWhere('r.event = :eventId')
+                ->setParameter('eventId', $eventId);
+        }
+        if ($roundId !== null) {
+            $qb->andWhere('v.round = :roundId')
+                ->setParameter('roundId', $roundId);
+        }
         if ($name !== null) {
             $qb->andWhere('p.firstName LIKE :name OR p.lastName LIKE :name')
                 ->setParameter('name', '%' . $name . '%');
@@ -432,23 +535,49 @@ class PersonRepository extends ServiceEntityRepository
                 break;
         }
 
-        return $qb;
+        // Compte total des résultats
+        $countQb = clone $qb;
+        $countQb->select('COUNT(DISTINCT p.id)');
+        $total = (int) $countQb->getQuery()->getSingleScalarResult();
+
+        // Récupération des résultats paginés
+        $qb->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+
+        return [
+            'items' => array_column($qb->getQuery()->getResult(), 'id'),
+            'total' => $total,
+        ];
     }
 
-    public function findRescuersPaginated(
+    public function findFilteredRescuerPersonIdsPaginated(
+        int     $page = 1,
+        int     $limit = 50,
         ?string $sort = null,
         ?string $order = null,
+        ?int    $eventId = null,
+        ?int    $roundId = null,
         ?string $name = null,
         ?string $email = null,
         ?string $phone = null,
         ?string $role = null
-    ): QueryBuilder
+    ): array
     {
         $order = $order ?? 'ASC';
 
         $qb = $this->createQueryBuilder('p')
+            ->select('DISTINCT p.id')
             ->innerJoin('p.rescuers', 'r');
 
+        if ($eventId !== null) {
+            $qb->innerJoin('r.round', 'ro')
+                ->andWhere('ro.event = :eventId')
+                ->setParameter('eventId', $eventId);
+        }
+        if ($roundId !== null) {
+            $qb->andWhere('r.round = :roundId')
+                ->setParameter('roundId', $roundId);
+        }
         if ($name !== null) {
             $qb->andWhere('p.firstName LIKE :name OR p.lastName LIKE :name')
                 ->setParameter('name', '%' . $name . '%');
@@ -484,8 +613,157 @@ class PersonRepository extends ServiceEntityRepository
                 break;
         }
 
-        return $qb;
+        // Compte total des résultats
+        $countQb = clone $qb;
+        $countQb->select('COUNT(DISTINCT p.id)');
+        $total = (int) $countQb->getQuery()->getSingleScalarResult();
+
+        // Récupération des résultats paginés
+        $qb->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+
+        return [
+            'items' => array_column($qb->getQuery()->getResult(), 'id'),
+            'total' => $total,
+        ];
     }
+
+    public function findFilteredVisitorPersonIdsPaginated(
+        int     $page = 1,
+        int     $limit = 50,
+        ?string $sort = null,
+        ?string $order = null,
+        ?int    $eventId = null,
+        ?int    $roundId = null,
+        ?int    $roundDetailId = null,
+        ?string $name = null,
+        ?string $email = null,
+        ?string $phone = null,
+        ?int    $fromCompanions = null,
+        ?int    $toCompanions = null,
+        ?string $fromDate = null,
+        ?string $toDate = null
+    ): array
+    {
+        $order = $order ?? 'ASC';
+
+        $qb = $this->createQueryBuilder('p')
+            ->select('DISTINCT p.id')
+            ->innerJoin('p.visitors', 'v')
+            ->innerJoin('v.roundDetail', 'rd')
+            ->innerJoin('rd.round', 'r');
+
+        if ($eventId !== null) {
+            $qb->andWhere('r.event = :eventId')
+                ->setParameter('eventId', $eventId);
+        }
+        if ($roundId !== null) {
+            $qb->andWhere('rd.round = :roundId')
+                ->setParameter('roundId', $roundId);
+        }
+        if ($roundDetailId !== null) {
+            $qb->andWhere('v.roundDetail = :roundDetailId')
+                ->setParameter('roundDetailId', $roundDetailId);
+        }
+        if ($name !== null) {
+            $qb->andWhere('p.firstName LIKE :name OR p.lastName LIKE :name')
+                ->setParameter('name', '%' . $name . '%');
+        }
+        if ($email !== null) {
+            $qb->andWhere('p.email LIKE :email')
+                ->setParameter('email', '%' . $email . '%');
+        }
+        if ($phone !== null) {
+            $qb->andWhere('p.phone LIKE :phone')
+                ->setParameter('phone', '%' . $phone . '%');
+        }
+        if ($fromCompanions !== null) {
+            $qb->andWhere('v.companions >= :fromCompanions')
+                ->setParameter('fromCompanions', $fromCompanions);
+        }
+        if ($toCompanions !== null) {
+            $qb->andWhere('v.companions <= :toCompanions')
+                ->setParameter('toCompanions', $toCompanions);
+        }
+        if ($fromDate !== null) {
+            $qb->andWhere('v.registrationDate >= :fromDate')
+                ->setParameter('fromDate', new \DateTime($fromDate));
+        }
+        if ($toDate !== null) {
+            $qb->andWhere('v.registrationDate <= :toDate')
+                ->setParameter('toDate', new \DateTime($toDate));
+        }
+
+        switch ($sort) {
+            case 'firstName':
+                $qb->orderBy('p.firstName', $order);
+                break;
+            case 'lastName':
+                $qb->orderBy('p.lastName', $order);
+                break;
+            case 'phone':
+                $qb->orderBy('p.phone', $order);
+                break;
+            case 'email':
+                $qb->orderBy('p.email', $order);
+                break;
+            case 'roundDetail':
+                $qb->orderBy('v.roundDetail', $order);
+                break;
+            case 'companions':
+                $qb->orderBy('v.companions', $order);
+                break;
+            case 'registrationDate':
+                $qb->orderBy('v.registrationDate', $order);
+                break;
+            default:
+                $qb->orderBy('v.registrationDate', 'DESC');
+        }
+
+        // Compte total des résultats
+        $countQb = clone $qb;
+        $countQb->select('COUNT(DISTINCT p.id)');
+        $total = (int) $countQb->getQuery()->getSingleScalarResult();
+
+        // Récupération des résultats paginés
+        $qb->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+
+        return [
+            'items' => array_column($qb->getQuery()->getResult(), 'id'),
+            'total' => $total,
+        ];
+    }
+
+    public function findPersonsByIds(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        $qb = $this->createQueryBuilder('p')
+            ->where('p.id IN (:ids)')
+            ->setParameter('ids', $ids);
+
+        $persons = $qb->getQuery()->getResult();
+
+        // Créer un tableau associatif pour un accès rapide par ID
+        $personsById = [];
+        foreach ($persons as $person) {
+            $personsById[$person->getId()] = $person;
+        }
+
+        // Réorganiser selon l'ordre des IDs fournis
+        $orderedPersons = [];
+        foreach ($ids as $id) {
+            if (isset($personsById[$id])) {
+                $orderedPersons[] = $personsById[$id];
+            }
+        }
+
+        return $orderedPersons;
+    }
+
 
     private function normalize(string $str): string
     {

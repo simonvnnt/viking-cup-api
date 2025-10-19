@@ -5,12 +5,9 @@ namespace App\Business;
 use App\Dto\CreateMemberDto;
 use App\Dto\MemberDto;
 use App\Entity\Member;
-use App\Entity\Person;
 use App\Repository\PersonRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
-use Pagerfanta\Doctrine\ORM\QueryAdapter;
-use Pagerfanta\Pagerfanta;
 
 readonly class MemberBusiness
 {
@@ -32,19 +29,13 @@ readonly class MemberBusiness
         ?string $roleVcup = null
     ): array
     {
-        $memberPersonsQuery = $this->personRepository->findMembersPaginated($sort, $order, $name, $email, $phone, $roleAsso, $roleVcup);
-
-        $adapter = new QueryAdapter($memberPersonsQuery, false, false);
-        $pager = new Pagerfanta($adapter);
-        $totalItems = $pager->count();
-        $pager->setMaxPerPage($limit);
-        $pager->setCurrentPage($page);
-        $memberPersons = $pager->getCurrentPageResults();
+        $personIdsTotal = $this->personRepository->findFilteredMemberPersonIdsPaginated($page, $limit, $sort, $order, $name, $email, $phone, $roleAsso, $roleVcup);
+        $persons = $this->personRepository->findPersonsByIds($personIdsTotal['items']);
 
         return [
-            'members' => $memberPersons,
+            'members' => $persons,
             'pagination' => [
-                'totalItems' => $totalItems,
+                'totalItems' => $personIdsTotal['total'],
                 'pageIndex' => $page,
                 'itemsPerPage' => $limit
             ]

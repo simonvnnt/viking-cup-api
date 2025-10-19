@@ -3,9 +3,10 @@
 namespace App\Controller\Api;
 
 use App\Business\CommissaireBusiness;
-use App\Dto\CommissaireDto;
+use App\Dto\PersonCommissaireDto;
 use App\Dto\CreateCommissaireDto;
 use App\Entity\Commissaire;
+use App\Entity\Person;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -63,25 +64,25 @@ class CommissaireApiController extends AbstractController
         return new Response();
     }
 
-    #[Route('/{commissaire}', name: 'update', methods: ['PUT'])]
+    #[Route('/{person}', name: 'update', methods: ['PUT'])]
     public function updateCommissaire(
         CommissaireBusiness $commissaireBusiness,
-        Commissaire $commissaire,
-        #[MapRequestPayload] CommissaireDto $commissaireDto
+        Person $person,
+        #[MapRequestPayload] PersonCommissaireDto $personCommissaireDto
     ): Response
     {
-        $commissaireBusiness->updatePersonCommissaire($commissaire, $commissaireDto);
+        $commissaireBusiness->updatePersonCommissaire($person, $personCommissaireDto);
 
         return new Response();
     }
 
-    #[Route('/{commissaire}', name: 'delete', methods: ['DELETE'])]
-    public function deleteCommissaire(
+    #[Route('/{person}', name: 'delete', methods: ['DELETE'])]
+    public function deletePersonCommissaires(
         CommissaireBusiness $commissaireBusiness,
-        Commissaire $commissaire
+        Person $person
     ): Response
     {
-        $commissaireBusiness->deleteCommissaire($commissaire);
+        $commissaireBusiness->deletePersonCommissaires($person);
 
         return new Response(null, Response::HTTP_NO_CONTENT);
     }

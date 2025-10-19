@@ -3,16 +3,15 @@
 namespace App\Business;
 
 use App\Dto\CreateRescuerDto;
+use App\Dto\PersonRescuerDto;
 use App\Dto\RescuerDto;
 use App\Entity\Rescuer;
 use App\Entity\Person;
 use App\Repository\PersonRepository;
-use App\Repository\RoundDetailRepository;
 use App\Repository\RoundRepository;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
-use Pagerfanta\Doctrine\ORM\QueryAdapter;
-use Pagerfanta\Pagerfanta;
 use Symfony\Component\Serializer\SerializerInterface;
 
 readonly class RescuerBusiness
@@ -20,7 +19,6 @@ readonly class RescuerBusiness
     public function __construct(
         private PersonRepository       $personRepository,
         private RoundRepository        $roundRepository,
-        private RoundDetailRepository  $roundDetailRepository,
         private SerializerInterface    $serializer,
         private EntityManagerInterface $em
     )
@@ -39,14 +37,8 @@ readonly class RescuerBusiness
         ?string $role = null
     ): array
     {
-        $persons = $this->personRepository->findRescuersPaginated($sort, $order, $name, $email, $phone, $role);
-
-        $adapter = new QueryAdapter($persons, false, false);
-        $pager = new Pagerfanta($adapter);
-        $totalItems = $pager->count();
-        $pager->setMaxPerPage($limit);
-        $pager->setCurrentPage($page);
-        $persons = $pager->getCurrentPageResults();
+        $personIdsTotal = $this->personRepository->findFilteredRescuerPersonIdsPaginated($page, $limit, $sort, $order, $eventId, $roundId, $name, $email, $phone, $role);
+        $persons = $this->personRepository->findPersonsByIds($personIdsTotal['items']);
 
         $rescuerPersons = [];
         /** @var Person $person */
@@ -68,7 +60,7 @@ readonly class RescuerBusiness
 
         return [
             'pagination' => [
-                'totalItems' => $totalItems,
+                'totalItems' => $personIdsTotal['total'],
                 'pageIndex' => $page,
                 'itemsPerPage' => $limit
             ],
@@ -76,82 +68,103 @@ readonly class RescuerBusiness
         ];
     }
 
-    public function createRescuer(CreateRescuerDto $rescuerDto): ?Rescuer
+    /**
+     * Creates new rescuers associated with a person.
+     *
+     * @param CreateRescuerDto $rescuerDto
+     *
+     * @return Person|null
+     * @throws Exception
+     */
+    public function createRescuer(CreateRescuerDto $rescuerDto): ?Person
     {
         $person = $this->personRepository->find($rescuerDto->personId);
         if ($rescuerDto->personId === null || $person === null) {
             throw new Exception('Person not found');
         }
 
-        $round = $this->roundRepository->find($rescuerDto->roundId);
-        if ($rescuerDto->roundId === null || $round === null) {
-            throw new Exception('Round not found');
-        }
+        // update rescuers
+        $rescuersDto = $this->serializer->denormalize($rescuerDto->rescuers, RescuerDto::class . '[]');
+        $this->updateRescuers($person, $rescuersDto, false);
 
-        // get round rescuer or create a new one
-        $rescuer = $person->getRescuers()->filter(fn(Rescuer $rescuer) => $rescuer->getRound()?->getId() === $round->getId())->first();
-        if ($rescuer === false) {
-            $rescuer = new Rescuer();
-            $rescuer->setPerson($person)
-                ->setRound($round);
-        }
-        $rescuer->setRole($rescuerDto->role);
-
-        $this->em->persist($rescuer);
         $this->em->flush();
 
-        return $rescuer;
+        return $person;
     }
 
-    public function updatePersonRescuer(Rescuer $rescuer, RescuerDto $rescuerDto): void
+    public function updatePersonRescuer(Person $person, PersonRescuerDto $personRescuerDto): void
     {
         // update person
-        $person = $rescuer->getPerson();
-
-        $person->setFirstName($rescuerDto->firstName)
-            ->setLastName($rescuerDto->lastName)
-            ->setEmail($rescuerDto->email)
-            ->setPhone($rescuerDto->phone)
-            ->setWarnings($rescuerDto->warnings);
-
-        $this->updatePersonPresence($person, $rescuerDto->presence);
+        $person->setFirstName($personRescuerDto->firstName)
+            ->setLastName($personRescuerDto->lastName)
+            ->setEmail($personRescuerDto->email)
+            ->setPhone($personRescuerDto->phone)
+            ->setWarnings($personRescuerDto->warnings);
 
         $this->em->persist($person);
 
-        // update rescuer
-        $rescuer->setRole($rescuerDto->role);
-
-        $this->em->persist($rescuer);
+        // update rescuers
+        $rescuerDtos = $this->serializer->denormalize($personRescuerDto->rescuers, RescuerDto::class . '[]');
+        $this->updateRescuers($person, $rescuerDtos);
 
         $this->em->flush();
     }
 
-    private function updatePersonPresence(Person $person, array $presence): void
+    public function updateRescuers(Person $person, array $rescuerDtos, bool $cleanExistent = true): void
     {
-        // Supprimer les détails de rounds qui ne sont plus dans la liste de présence
-        foreach ($person->getRoundDetails()->toArray() as $roundDetail) {
-            if (!in_array($roundDetail->getId(), $presence)) {
-                $person->removeRoundDetail($roundDetail);
-            }
+        $rescuers = $person->getRescuers();
+
+        if ($cleanExistent) {
+            // delete rescuers that are not in the DTO
+            $this->deleteRescuers($rescuers, $rescuerDtos);
         }
 
-        // Ajouter les nouveaux détails de rounds
-        foreach ($presence as $roundDetailId) {
-            // Vérifier si le détail de round existe déjà
-            if ($person->getRoundDetails()->exists(fn($key, $rd) => $rd->getId() === $roundDetailId)) {
+        /** @var RescuerDto $rescuerDto */
+        foreach ($rescuerDtos as $rescuerDto) {
+            if ($rescuerDto->id) {
+                $rescuer = $rescuers->filter(fn(Rescuer $s) => $s->getId() === $rescuerDto->id)->first();
+                if ($rescuer === false) {
+                    continue;
+                }
+            } else {
+                $rescuer = new Rescuer();
+                $rescuer->setPerson($person);
+            }
+
+            $round = $this->roundRepository->find($rescuerDto->roundId);
+            if ($round === null) {
                 continue;
             }
 
-            $roundDetail = $this->roundDetailRepository->find($roundDetailId);
-            if ($roundDetail !== null) {
-                $person->addRoundDetail($roundDetail);
-            }
+            $rescuer->setRound($round)
+                ->setRole($rescuerDto->role);
+
+            $this->em->persist($rescuer);
         }
     }
 
-    public function deleteRescuer(Rescuer $rescuer): void
+    /**
+     * Deletes rescuers from the database.
+     *
+     * @param Collection<int, Rescuer> $rescuers
+     * @param RescuerDto[] $rescuerDtos
+     */
+    private function deleteRescuers(Collection $rescuers, array $rescuerDtos): void
     {
-        $this->em->remove($rescuer);
+        $rescuerDtoIds = array_map(fn(RescuerDto $dto) => $dto->id, $rescuerDtos);
+        $rescuersToDelete = $rescuers->filter(fn(Rescuer $s) => !in_array($s->getId(), $rescuerDtoIds));
+
+        foreach ($rescuersToDelete as $rescuer) {
+            $this->em->remove($rescuer);
+        }
+    }
+
+    public function deletePersonRescuer(Person $person): void
+    {
+        foreach ($person->getRescuers()->toArray() as $rescuer) {
+            $this->em->remove($rescuer);
+        }
+
         $this->em->flush();
     }
 }

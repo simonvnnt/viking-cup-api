@@ -76,7 +76,7 @@ class BilletwebBusiness
                 try {
                     $billetwebTicket = $this->createBilletwebTicketFromDto($eventTicket);
 
-                    if ($billetwebTicket->getPass() === -1) {
+                    if ($billetwebTicket === null || $billetwebTicket->getPass() === -1) {
                         continue;
                     }
 
@@ -111,7 +111,8 @@ class BilletwebBusiness
                     $pilot = $person->getPilot();
                     if ($pilot === null) {
                         $pilot = new Pilot();
-                        $pilot->setFfsaLicensee(boolval($billetwebTicket->getCustom()['Etes-vous licencié FFSA ?'] ?? null));
+                        $pilot->setPerson($person)
+                            ->setFfsaLicensee(boolval($billetwebTicket->getCustom()['Etes-vous licencié FFSA ?'] ?? null));
 
                         if ($pilot->getCreatedAt() === null && $billetwebTicket->getCreationDate() !== null) {
                             $pilot->setCreatedAt($billetwebTicket->getCreationDate());
@@ -182,7 +183,7 @@ class BilletwebBusiness
                     $billetwebTicket = $this->createBilletwebTicketFromDto($eventTicket);
 
                     // Skip if the ticket is a pack
-                    if ($billetwebTicket->getPass() === -1 || $billetwebTicket->getTicketLabel() === 'Pass Viking!Cup enfant') {
+                    if ($billetwebTicket === null || $billetwebTicket->getPass() === -1 || $billetwebTicket->getTicketLabel() === 'Pass Viking!Cup enfant') {
                         continue;
                     }
 
@@ -268,7 +269,7 @@ class BilletwebBusiness
         $billetweb = $this->billetwebRepository->find($billetwebDto->id);
 
         if ($billetweb !== null) {
-            return $billetweb;
+            return null;
         }
 
         $billetweb = new BilletwebTicket();

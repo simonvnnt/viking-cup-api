@@ -2,14 +2,12 @@
 
 namespace App\Dto;
 
-class CreateRescuerDto
+class CreateVisitorDto
 {
     public function __construct(
-        // Person
         public int $personId,
-
-        // Rescuers
-        public array $rescuers = []
+        public int $roundDetailId,
+        public int $companions = 0
     )
     {}
 }

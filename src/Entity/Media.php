@@ -15,7 +15,7 @@ class Media
     #[Groups('media')]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     #[Groups('media')]
     private ?string $insuranceFilePath = null;
 
@@ -66,7 +66,7 @@ class Media
         return $this->insuranceFilePath;
     }
 
-    public function setInsuranceFilePath(string $insuranceFilePath): static
+    public function setInsuranceFilePath(?string $insuranceFilePath): static
     {
         $this->insuranceFilePath = $insuranceFilePath;
 

@@ -35,7 +35,7 @@ class Pilot
     /**
      * @var Collection<int, PilotRoundCategory>
      */
-    #[ORM\OneToMany(targetEntity: PilotRoundCategory::class, mappedBy: 'pilot')]
+    #[ORM\OneToMany(targetEntity: PilotRoundCategory::class, mappedBy: 'pilot', cascade: ['remove'], orphanRemoval: true)]
     #[Groups(['pilotPilotRoundCategories'])]
     private Collection $pilotRoundCategories;
 

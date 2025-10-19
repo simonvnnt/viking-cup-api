@@ -6,7 +6,6 @@ use App\Dto\PersonDto;
 use App\Entity\Person;
 use App\Helper\LinkHelper;
 use App\Repository\PersonRepository;
-use App\Repository\RoundDetailRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Pagerfanta\Doctrine\ORM\QueryAdapter;
 use Pagerfanta\Pagerfanta;
@@ -15,7 +14,6 @@ readonly class PersonBusiness
 {
     public function __construct(
         private PersonRepository       $personRepository,
-        private RoundDetailRepository  $roundDetailRepository,
         private LinkHelper             $linkHelper,
         private EntityManagerInterface $em
     )
@@ -50,23 +48,21 @@ readonly class PersonBusiness
 
     public function createPerson(PersonDto $personDto): Person
     {
-        $person = $this->personRepository->findOneBy(['email' => $personDto->email]);
+        $person = $this->personRepository->findOneBy(['email' => $personDto->email, 'firstName' => $personDto->firstName, 'lastName' => $personDto->lastName]);
         if ($person === null) {
             $person = new Person();
-            $person->setEmail($personDto->email);
+            $person->setEmail($personDto->email)
+                ->setFirstName($personDto->firstName)
+                ->setLastName($personDto->lastName);
         }
 
-        $person->setFirstName($personDto->firstName)
-            ->setLastName($personDto->lastName)
-            ->setPhone($personDto->phone)
+        $person->setPhone($personDto->phone)
             ->setAddress($personDto->address)
             ->setCity($personDto->city)
             ->setZipCode($personDto->zipCode)
             ->setCountry($personDto->country)
             ->setWarnings($personDto->warnings)
             ->setComment($personDto->comment);
-
-        $this->updatePersonPresence($person, $personDto->presence);
 
         if (!empty($personDto->instagram)) {
             $this->linkHelper->upsertInstagramLink($person, $personDto->instagram);
@@ -76,32 +72,5 @@ readonly class PersonBusiness
         $this->em->flush();
 
         return $person;
-    }
-
-    private function updatePersonPresence(Person $person, array $presence): void
-    {
-        // Supprimer les détails de rounds qui ne sont plus dans la liste de présence
-        foreach ($person->getRoundDetails()->toArray() as $roundDetail) {
-            if (!in_array($roundDetail->getId(), $presence)) {
-                $person->removeRoundDetail($roundDetail);
-            }
-        }
-
-        // Ajouter les nouveaux détails de rounds
-        foreach ($presence as $roundDetailId) {
-            // Vérifier si le détail de round existe déjà
-            if ($person->getRoundDetails()->exists(fn($key, $rd) => $rd->getId() === $roundDetailId)) {
-                continue;
-            }
-
-            $roundDetail = $this->roundDetailRepository->find($roundDetailId);
-            if ($roundDetail !== null) {
-                $person->addRoundDetail($roundDetail);
-
-                if (!$person->getRounds()->contains($roundDetail->getRound())) {
-                    $person->addRound($roundDetail->getRound());
-                }
-            }
-        }
     }
 }

@@ -24,4 +24,13 @@ readonly class FileHelper
             unlink($filePath);
         }
     }
+
+    public function normalizeFilename(string $name): string
+    {
+        // Remove special characters and replace spaces with underscores
+        $name = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $name);
+        $name = str_replace(' ', '_', $name);
+        // Convert to lowercase
+        return strtolower($name);
+    }
 }

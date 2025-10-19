@@ -23,6 +23,7 @@ class RoundDetail
 
     #[ORM\ManyToOne(inversedBy: 'roundDetails')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups('roundDetailRound')]
     private ?Round $round = null;
 
     /**

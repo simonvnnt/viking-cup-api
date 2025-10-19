@@ -2,12 +2,12 @@
 
 namespace App\Dto;
 
-class RescuerDto
+class SponsorLinkDto
 {
     public function __construct(
-        public int $roundId,
+        public int $linkTypeId,
+        public string $link,
         public ?int $id = null,
-        public ?string $role = null,
     )
     {}
 }

@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\VisitorRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: VisitorRepository::class)]
 class Visitor
@@ -11,18 +12,23 @@ class Visitor
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups('visitor')]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'visitors')]
+    #[Groups('visitorPerson')]
     private ?Person $person = null;
 
     #[ORM\ManyToOne(inversedBy: 'visitors')]
+    #[Groups('visitorRoundDetail')]
     private ?RoundDetail $roundDetail = null;
 
     #[ORM\Column]
+    #[Groups('visitor')]
     private ?int $companions = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups('visitor')]
     private ?\DateTime $registrationDate = null;
 
     public function getId(): ?int

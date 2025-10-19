@@ -20,8 +20,6 @@ use App\Repository\PersonRepository;
 use App\Repository\RoundRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
-use Pagerfanta\Doctrine\ORM\QueryAdapter;
-use Pagerfanta\Pagerfanta;
 use Symfony\Component\Serializer\SerializerInterface;
 
 readonly class PilotBusiness
@@ -52,22 +50,17 @@ readonly class PilotBusiness
         ?string $number = null,
         ?bool   $ffsaLicensee = null,
         ?string $ffsaNumber = null,
-        ?string $nationality = null
+        ?string $nationality = null,
+        ?bool   $receivedWindscreenBand = null
     ): array
     {
-        $pilotPersonsQuery = $this->personRepository->findPilotsPaginated($sort, $order, $name, $email, $phone, $eventId, $roundId, $categoryId, $number, $ffsaLicensee, $ffsaNumber, $nationality);
-
-        $adapter = new QueryAdapter($pilotPersonsQuery, false, false);
-        $pager = new Pagerfanta($adapter);
-        $totalItems = $pager->count();
-        $pager->setMaxPerPage($limit);
-        $pager->setCurrentPage($page);
-        $pilotPersons = $pager->getCurrentPageResults();
+        $personIdsTotal = $this->personRepository->findFilteredPilotPersonIdsPaginated($page, $limit, $sort, $order, $name, $email, $phone, $eventId, $roundId, $categoryId, $number, $ffsaLicensee, $ffsaNumber, $nationality, $receivedWindscreenBand);
+        $persons = $this->personRepository->findPersonsByIds($personIdsTotal['items']);
 
         return [
-            'pilots' => $pilotPersons,
+            'pilots' => $persons,
             'pagination' => [
-                'totalItems' => $totalItems,
+                'totalItems' => $personIdsTotal['total'],
                 'pageIndex' => $page,
                 'itemsPerPage' => $limit
             ]
@@ -263,7 +256,7 @@ readonly class PilotBusiness
                 }
             }
             if ($pilotEvent !== false) {
-                $pilotEvent->setPilotNumber($pilotDto->eventId)
+                $pilotEvent->setPilotNumber($pilotDto->number)
                     ->setReceiveWindscreenBand($pilotDto->receiveWindscreenBand);
 
                 $this->em->persist($pilotEvent);
