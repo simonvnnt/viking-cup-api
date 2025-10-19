@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\ConfigurationRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 
@@ -23,7 +24,7 @@ class Configuration
     #[Groups('config')]
     private ?string $displayName = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups('config')]
     private ?string $value = null;
 
