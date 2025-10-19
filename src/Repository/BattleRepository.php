@@ -57,7 +57,7 @@ class BattleRepository extends ServiceEntityRepository
             ])
             ->leftJoin('b.leader', 'prc1')
             ->leftJoin('b.chaser', 'prc2')
-            ->innerJoin(PilotRoundCategory::class, 'prc', Join::WITH, 'b.pilotRoundCategory1 = prc OR b.pilotRoundCategory2 = prc')
+            ->innerJoin(PilotRoundCategory::class, 'prc', Join::WITH, 'b.leader = prc OR b.chaser = prc')
             ->andWhere('prc1 IS NULL OR (prc1.round = :round AND prc1.isEngaged = :isEngaged)')
             ->andWhere('prc1 IS NULL OR (prc1.category = :category AND prc1.isEngaged = :isEngaged)')
             ->andWhere('prc2 IS NULL OR (prc2.round = :round AND prc2.isEngaged = :isEngaged)')
