@@ -16,7 +16,10 @@ class PilotNumberCounter
     #[ORM\Column]
     private ?int $pilotNumberCounter = null;
 
-    #[ORM\OneToOne(inversedBy: 'pilotNumberCounter', cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne(inversedBy: 'pilotNumberCounters')]
+    private ?Event $event = null;
+
+    #[ORM\ManyToOne(inversedBy: 'pilotNumberCounters')]
     private ?Category $category = null;
 
     public function getId(): ?int
@@ -32,6 +35,18 @@ class PilotNumberCounter
     public function setPilotNumberCounter(int $pilotNumberCounter): static
     {
         $this->pilotNumberCounter = $pilotNumberCounter;
+
+        return $this;
+    }
+
+    public function getEvent(): ?Event
+    {
+        return $this->event;
+    }
+
+    public function setEvent(?Event $event): static
+    {
+        $this->event = $event;
 
         return $this;
     }

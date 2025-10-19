@@ -48,18 +48,6 @@ class Link
         return $this->id;
     }
 
-    public function getIcon(): string
-    {
-        return $this->icon;
-    }
-
-    public function setIcon(string $icon): static
-    {
-        $this->icon = $icon;
-
-        return $this;
-    }
-
     public function getUrl(): ?string
     {
         return $this->url;

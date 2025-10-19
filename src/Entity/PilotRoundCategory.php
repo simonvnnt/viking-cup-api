@@ -34,7 +34,7 @@ class PilotRoundCategory
     private ?Pilot $secondPilot = null;
 
     #[ORM\Column]
-    private ?bool $mainPilot = null;
+    private ?bool $mainPilot = true;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['pilotRoundCategory'])]
@@ -51,7 +51,7 @@ class PilotRoundCategory
     /**
      * @var Collection<int, Qualifying>
      */
-    #[ORM\OneToMany(targetEntity: Qualifying::class, mappedBy: 'pilotRoundCategory')]
+    #[ORM\OneToMany(targetEntity: Qualifying::class, mappedBy: 'pilotRoundCategory', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[Groups(['pilotRoundCategoryQualifyings'])]
     private Collection $qualifyings;
 

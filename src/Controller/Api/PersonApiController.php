@@ -2,20 +2,14 @@
 
 namespace App\Controller\Api;
 
-use App\Business\MediaBusiness;
 use App\Business\PersonBusiness;
-use App\Dto\MediaDto;
-use App\Repository\MediaFileRepository;
+use App\Dto\PersonDto;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
-use Symfony\Component\HttpKernel\Attribute\MapUploadedFile;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Serializer\SerializerInterface;
 
 #[Route('/api/persons', name: 'api_persons')]
 class PersonApiController extends AbstractController
@@ -27,11 +21,28 @@ class PersonApiController extends AbstractController
         #[MapQueryParameter] ?int $limit,
         #[MapQueryParameter] ?string $sort,
         #[MapQueryParameter] ?string $order,
-        #[MapQueryParameter] ?string $personeType
+        #[MapQueryParameter] ?string $person = null
+    ): JsonResponse
+    {
+        $persons = $personBusiness->getPersons(
+            $page ?? 1,
+            $limit ?? 50,
+            $sort,
+            $order,
+            $person,
+        );
+
+        return $this->json($persons, Response::HTTP_OK, [], ['groups' => ['person', 'personRoundDetails', 'roundDetail']]);
+    }
+
+    #[Route('', name: 'create', methods: ['POST'])]
+    public function createPerson(
+        PersonBusiness $personBusiness,
+        #[MapRequestPayload] PersonDto $personDto
     ): Response
     {
-        $persons = $personBusiness->getPersons($page ?? 1, $limit ?? 20, $sort, $order, $personeType);
+        $person = $personBusiness->createPerson($personDto);
 
-        return $this->json($persons, 200, [], ["groups" => ["person", "personPersonType", "personType", "personMedia", "media"]]);
+        return $this->json($person, Response::HTTP_CREATED, [], ['groups' => ['person']]);
     }
 }

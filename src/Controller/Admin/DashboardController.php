@@ -3,7 +3,6 @@
 namespace App\Controller\Admin;
 
 use App\Entity\MediaFile;
-use App\Entity\Sponsor;
 use App\Entity\User;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminDashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
@@ -30,7 +29,6 @@ class DashboardController extends AbstractDashboardController
     public function configureMenuItems(): iterable
     {
 //        yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');
-        yield MenuItem::linkToCrud('Sponsors', 'fa fa-handshake-simple', Sponsor::class);
         yield MenuItem::linkToCrud('Médias', 'fa fa-image', MediaFile::class);
         yield MenuItem::linkToRoute('Médias - Import en masse', 'fas fa-upload', 'admin_media_import');
         yield MenuItem::linkToCrud('Utilisateurs', 'fa fa-users', User::class);

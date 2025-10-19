@@ -42,7 +42,7 @@ class BilletwebTicketDto
         public bool              $orderAccreditation,
         public string              $orderManagement,
         public string              $orderLanguage,
-        public array               $custom
+        public ?array              $custom = null
     )
     {}
 }

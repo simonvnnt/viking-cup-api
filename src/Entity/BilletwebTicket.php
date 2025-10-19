@@ -29,13 +29,13 @@ class BilletwebTicket
     private ?string $category = null;
 
     #[ORM\Column(length: 255)]
-    private ?string $pilotLastName = null;
+    private ?string $lastName = null;
 
     #[ORM\Column(length: 255)]
-    private ?string $pilotFirstName = null;
+    private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
-    private ?string $pilotEmail = null;
+    private ?string $email = null;
 
     #[ORM\Column(length: 255)]
     private ?string $buyerLastName = null;
@@ -151,38 +151,38 @@ class BilletwebTicket
         return $this;
     }
 
-    public function getPilotLastName(): ?string
+    public function getLastName(): ?string
     {
-        return $this->pilotLastName;
+        return $this->lastName;
     }
 
-    public function setPilotLastName(string $pilotLastName): static
+    public function setLastName(string $lastName): static
     {
-        $this->pilotLastName = $pilotLastName;
+        $this->lastName = $lastName;
 
         return $this;
     }
 
-    public function getPilotFirstName(): ?string
+    public function getFirstName(): ?string
     {
-        return $this->pilotFirstName;
+        return $this->firstName;
     }
 
-    public function setPilotFirstName(string $pilotFirstName): static
+    public function setFirstName(string $firstName): static
     {
-        $this->pilotFirstName = $pilotFirstName;
+        $this->firstName = $firstName;
 
         return $this;
     }
 
-    public function getPilotEmail(): ?string
+    public function getEmail(): ?string
     {
-        return $this->pilotEmail;
+        return $this->email;
     }
 
-    public function setPilotEmail(string $pilotEmail): static
+    public function setEmail(string $email): static
     {
-        $this->pilotEmail = $pilotEmail;
+        $this->email = $email;
 
         return $this;
     }

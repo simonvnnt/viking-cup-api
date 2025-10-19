@@ -23,6 +23,7 @@ class RoundDetail
 
     #[ORM\ManyToOne(inversedBy: 'roundDetails')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups('roundDetailRound')]
     private ?Round $round = null;
 
     /**
@@ -31,9 +32,16 @@ class RoundDetail
     #[ORM\ManyToMany(targetEntity: Person::class, mappedBy: 'roundDetails')]
     private Collection $people;
 
+    /**
+     * @var Collection<int, Visitor>
+     */
+    #[ORM\OneToMany(targetEntity: Visitor::class, mappedBy: 'roundDetail')]
+    private Collection $visitors;
+
     public function __construct()
     {
         $this->people = new ArrayCollection();
+        $this->visitors = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -87,6 +95,36 @@ class RoundDetail
     {
         if ($this->people->removeElement($person)) {
             $person->removeRoundDetail($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Visitor>
+     */
+    public function getVisitors(): Collection
+    {
+        return $this->visitors;
+    }
+
+    public function addVisitor(Visitor $visitor): static
+    {
+        if (!$this->visitors->contains($visitor)) {
+            $this->visitors->add($visitor);
+            $visitor->setRoundDetail($this);
+        }
+
+        return $this;
+    }
+
+    public function removeVisitor(Visitor $visitor): static
+    {
+        if ($this->visitors->removeElement($visitor)) {
+            // set the owning side to null (unless already changed)
+            if ($visitor->getRoundDetail() === $this) {
+                $visitor->setRoundDetail(null);
+            }
         }
 
         return $this;

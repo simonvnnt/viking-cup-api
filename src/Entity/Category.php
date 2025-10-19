@@ -27,19 +27,23 @@ class Category
     #[ORM\OneToMany(targetEntity: PilotRoundCategory::class, mappedBy: 'category')]
     private Collection $pilotRoundCategories;
 
-    #[ORM\OneToOne(mappedBy: 'category', cascade: ['persist', 'remove'])]
-    private ?PilotNumberCounter $pilotNumberCounter = null;
-
     /**
      * @var Collection<int, RoundCategory>
      */
     #[ORM\OneToMany(targetEntity: RoundCategory::class, mappedBy: 'category')]
     private Collection $roundCategories;
 
+    /**
+     * @var Collection<int, PilotNumberCounter>
+     */
+    #[ORM\OneToMany(targetEntity: PilotNumberCounter::class, mappedBy: 'category')]
+    private Collection $pilotNumberCounters;
+
     public function __construct()
     {
         $this->pilotRoundCategories = new ArrayCollection();
         $this->roundCategories = new ArrayCollection();
+        $this->pilotNumberCounters = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -89,28 +93,6 @@ class Category
         return $this;
     }
 
-    public function getPilotNumberCounter(): ?PilotNumberCounter
-    {
-        return $this->pilotNumberCounter;
-    }
-
-    public function setPilotNumberCounter(?PilotNumberCounter $pilotNumberCounter): static
-    {
-        // unset the owning side of the relation if necessary
-        if ($pilotNumberCounter === null && $this->pilotNumberCounter !== null) {
-            $this->pilotNumberCounter->setCategory(null);
-        }
-
-        // set the owning side of the relation if necessary
-        if ($pilotNumberCounter !== null && $pilotNumberCounter->getCategory() !== $this) {
-            $pilotNumberCounter->setCategory($this);
-        }
-
-        $this->pilotNumberCounter = $pilotNumberCounter;
-
-        return $this;
-    }
-
     /**
      * @return Collection<int, RoundCategory>
      */
@@ -135,6 +117,36 @@ class Category
             // set the owning side to null (unless already changed)
             if ($roundCategory->getCategory() === $this) {
                 $roundCategory->setCategory(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, PilotNumberCounter>
+     */
+    public function getPilotNumberCounters(): Collection
+    {
+        return $this->pilotNumberCounters;
+    }
+
+    public function addPilotNumberCounter(PilotNumberCounter $pilotNumberCounter): static
+    {
+        if (!$this->pilotNumberCounters->contains($pilotNumberCounter)) {
+            $this->pilotNumberCounters->add($pilotNumberCounter);
+            $pilotNumberCounter->setCategory($this);
+        }
+
+        return $this;
+    }
+
+    public function removePilotNumberCounter(PilotNumberCounter $pilotNumberCounter): static
+    {
+        if ($this->pilotNumberCounters->removeElement($pilotNumberCounter)) {
+            // set the owning side to null (unless already changed)
+            if ($pilotNumberCounter->getCategory() === $this) {
+                $pilotNumberCounter->setCategory(null);
             }
         }
 

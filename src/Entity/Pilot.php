@@ -20,41 +20,9 @@ class Pilot
     #[Groups(['pilot'])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
-    #[Groups(['pilot'])]
-    private ?string $firstName = null;
-
-    #[ORM\Column(length: 255)]
-    #[Groups(['pilot'])]
-    private ?string $lastName = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['pilot'])]
-    private ?string $email = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['pilot'])]
-    private ?string $phoneNumber = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['pilot'])]
-    private ?string $address = null;
-
-    #[ORM\Column(length: 10, nullable: true)]
-    #[Groups(['pilot'])]
-    private ?string $zipCode = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['pilot'])]
-    private ?string $city = null;
-
-    #[ORM\Column(length: 5, nullable: true)]
-    #[Groups(['pilot'])]
-    private ?string $country = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['pilot'])]
-    private ?string $nationality = null;
+    #[ORM\OneToOne(inversedBy: 'pilot', cascade: ['persist', 'remove'])]
+    #[Groups(['pilotPerson'])]
+    private ?Person $person = null;
 
     #[ORM\Column(nullable: true)]
     #[Groups(['pilot'])]
@@ -67,7 +35,8 @@ class Pilot
     /**
      * @var Collection<int, PilotRoundCategory>
      */
-    #[ORM\OneToMany(targetEntity: PilotRoundCategory::class, mappedBy: 'pilot')]
+    #[ORM\OneToMany(targetEntity: PilotRoundCategory::class, mappedBy: 'pilot', cascade: ['remove'], orphanRemoval: true)]
+    #[Groups(['pilotPilotRoundCategories'])]
     private Collection $pilotRoundCategories;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
@@ -106,110 +75,14 @@ class Pilot
         return $this->id;
     }
 
-    public function getFirstName(): ?string
+    public function getPerson(): ?Person
     {
-        return $this->firstName;
+        return $this->person;
     }
 
-    public function setFirstName(string $firstName): static
+    public function setPerson(?Person $person): static
     {
-        $this->firstName = $firstName;
-
-        return $this;
-    }
-
-    public function getLastName(): ?string
-    {
-        return $this->lastName;
-    }
-
-    public function setLastName(string $lastName): static
-    {
-        $this->lastName = $lastName;
-
-        return $this;
-    }
-
-    public function getEmail(): ?string
-    {
-        return $this->email;
-    }
-
-    public function setEmail(?string $email): static
-    {
-        $this->email = $email;
-
-        return $this;
-    }
-
-    public function getPhoneNumber(): ?string
-    {
-        return $this->phoneNumber;
-    }
-
-    public function setPhoneNumber(?string $phoneNumber): static
-    {
-        $this->phoneNumber = $phoneNumber;
-
-        return $this;
-    }
-
-    public function getAddress(): ?string
-    {
-        return $this->address;
-    }
-
-    public function setAddress(?string $address): static
-    {
-        $this->address = $address;
-
-        return $this;
-    }
-
-    public function getZipCode(): ?string
-    {
-        return $this->zipCode;
-    }
-
-    public function setZipCode(?string $zipCode): static
-    {
-        $this->zipCode = $zipCode;
-
-        return $this;
-    }
-
-    public function getCity(): ?string
-    {
-        return $this->city;
-    }
-
-    public function setCity(?string $city): static
-    {
-        $this->city = $city;
-
-        return $this;
-    }
-
-    public function getCountry(): ?string
-    {
-        return $this->country;
-    }
-
-    public function setCountry(?string $country): static
-    {
-        $this->country = $country;
-
-        return $this;
-    }
-
-    public function getNationality(): ?string
-    {
-        return $this->nationality;
-    }
-
-    public function setNationality(?string $nationality): static
-    {
-        $this->nationality = $nationality;
+        $this->person = $person;
 
         return $this;
     }

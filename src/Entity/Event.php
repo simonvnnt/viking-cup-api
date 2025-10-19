@@ -29,6 +29,7 @@ class Event
      * @var Collection<int, Round>
      */
     #[ORM\OneToMany(targetEntity: Round::class, mappedBy: 'event')]
+    #[Groups(['eventRounds'])]
     private Collection $rounds;
 
     /**
@@ -37,10 +38,24 @@ class Event
     #[ORM\OneToMany(targetEntity: PilotEvent::class, mappedBy: 'event', orphanRemoval: true)]
     private Collection $pilotEvents;
 
+    /**
+     * @var Collection<int, PilotNumberCounter>
+     */
+    #[ORM\OneToMany(targetEntity: PilotNumberCounter::class, mappedBy: 'event')]
+    private Collection $pilotNumberCounters;
+
+    /**
+     * @var Collection<int, Sponsorship>
+     */
+    #[ORM\OneToMany(targetEntity: Sponsorship::class, mappedBy: 'event')]
+    private Collection $sponsorships;
+
     public function __construct()
     {
         $this->rounds = new ArrayCollection();
         $this->pilotEvents = new ArrayCollection();
+        $this->pilotNumberCounters = new ArrayCollection();
+        $this->sponsorships = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -126,6 +141,66 @@ class Event
             // set the owning side to null (unless already changed)
             if ($pilotEvent->getEvent() === $this) {
                 $pilotEvent->setEvent(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, PilotNumberCounter>
+     */
+    public function getPilotNumberCounters(): Collection
+    {
+        return $this->pilotNumberCounters;
+    }
+
+    public function addPilotNumberCounter(PilotNumberCounter $pilotNumberCounter): static
+    {
+        if (!$this->pilotNumberCounters->contains($pilotNumberCounter)) {
+            $this->pilotNumberCounters->add($pilotNumberCounter);
+            $pilotNumberCounter->setEvent($this);
+        }
+
+        return $this;
+    }
+
+    public function removePilotNumberCounter(PilotNumberCounter $pilotNumberCounter): static
+    {
+        if ($this->pilotNumberCounters->removeElement($pilotNumberCounter)) {
+            // set the owning side to null (unless already changed)
+            if ($pilotNumberCounter->getEvent() === $this) {
+                $pilotNumberCounter->setEvent(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Sponsorship>
+     */
+    public function getSponsorships(): Collection
+    {
+        return $this->sponsorships;
+    }
+
+    public function addSponsorship(Sponsorship $sponsorship): static
+    {
+        if (!$this->sponsorships->contains($sponsorship)) {
+            $this->sponsorships->add($sponsorship);
+            $sponsorship->setEvent($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSponsorship(Sponsorship $sponsorship): static
+    {
+        if ($this->sponsorships->removeElement($sponsorship)) {
+            // set the owning side to null (unless already changed)
+            if ($sponsorship->getEvent() === $this) {
+                $sponsorship->setEvent(null);
             }
         }
 

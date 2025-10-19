@@ -28,7 +28,7 @@ class QualifyingApiController extends AbstractController
 
         $roundCategoryPilotsQualifying = $qualifyingDetailBusiness->getPilotRoundCategoryPilotQualifying($pilotRoundCategory);
 
-        return $this->json($roundCategoryPilotsQualifying, Response::HTTP_OK, [], ['groups' => ['qualifying', 'qualifyingDetails', 'qualifyingDetail', 'qualifyingDetailCriteria', 'qualifyingCriteria', 'pilotRoundCategory', 'pilotRoundCategoryPilot', 'pilot', 'pilotEvents', 'pilotEvent']]);
+        return $this->json($roundCategoryPilotsQualifying, Response::HTTP_OK, [], ['groups' => ['qualifying', 'qualifyingDetails', 'qualifyingDetail', 'qualifyingDetailCriteria', 'qualifyingCriteria', 'pilotRoundCategory', 'pilotRoundCategoryPilot', 'pilot', 'pilotPerson', 'person', 'pilotEvents', 'pilotEvent']]);
     }
 
     #[Route('/ranking', name: 'qualifying_ranking', methods: ['GET'])]
@@ -45,7 +45,7 @@ class QualifyingApiController extends AbstractController
 
         $qualifyingRanking = $qualifyingBusiness->getQualifyingRanking($round, $category);
 
-        return $this->json($qualifyingRanking, 200, [], ['groups' => ['pilot', 'pilotEvent', 'round', 'category', 'qualifying']]);
+        return $this->json($qualifyingRanking, 200, [], ['groups' => ['pilot', 'pilotPerson', 'person', 'pilotEvent', 'round', 'category', 'qualifying']]);
     }
 
     #[Route('/{qualifying}', name: 'update_qualifying', methods: ['PUT'])]

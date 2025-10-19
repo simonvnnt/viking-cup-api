@@ -45,6 +45,7 @@ class PilotRoundCategoryRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('prc')
             ->select('prc, p, pe')
             ->innerJoin('prc.pilot', 'p')
+            ->innerJoin('p.person', 'person')
             ->leftJoin('p.pilotEvents', 'pe', 'WITH', 'pe.event = :event')
             ->andWhere('prc.round = :round')
             ->andWhere('prc.category = :category')
@@ -55,11 +56,11 @@ class PilotRoundCategoryRepository extends ServiceEntityRepository
         if ($search !== null) {
             $qb->andWhere('pe.event = :event')
                 ->andWhere('
-                    p.firstName LIKE :pilot OR
-                    p.lastName LIKE :pilot OR
-                    CONCAT(p.firstName, \' \', p.lastName) LIKE :pilot OR
-                    CONCAT(p.lastName, \' \', p.firstName) LIKE :pilot OR
-                    p.email LIKE :pilot OR
+                    person.firstName LIKE :pilot OR
+                    person.lastName LIKE :pilot OR
+                    CONCAT(person.firstName, \' \', person.lastName) LIKE :pilot OR
+                    CONCAT(person.lastName, \' \', person.firstName) LIKE :pilot OR
+                    person.email LIKE :pilot OR
                     pe.pilotNumber LIKE :pilot
                 ')
                 ->setParameter('event', $round->getEvent())
@@ -68,7 +69,7 @@ class PilotRoundCategoryRepository extends ServiceEntityRepository
 
         switch ($sort) {
             case 'pilotName':
-                $qb->addOrderBy('p.lastName', $order);
+                $qb->addOrderBy('person.lastName', $order);
                 break;
             case 'isCompeting':
                 $qb->addOrderBy('prc.isCompeting', $order);
@@ -82,29 +83,4 @@ class PilotRoundCategoryRepository extends ServiceEntityRepository
 
         return $qb->getQuery();
     }
-
-    //    /**
-    //     * @return PilotRoundCategory[] Returns an array of PilotRoundCategory objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?PilotRoundCategory
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
 }

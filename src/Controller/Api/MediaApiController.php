@@ -3,9 +3,12 @@
 namespace App\Controller\Api;
 
 use App\Business\MediaBusiness;
-use App\Dto\MediaDto;
+use App\Dto\CreateMediaDto;
+use App\Dto\MediaPublicDto;
 use App\Dto\MediaSelectionDto;
+use App\Dto\PersonMediaDto;
 use App\Entity\Media;
+use App\Entity\Person;
 use App\Entity\Round;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -21,42 +24,21 @@ use Symfony\Component\Serializer\SerializerInterface;
 #[Route('/api/medias', name: 'api_medias')]
 class MediaApiController extends AbstractController
 {
-    #[Route('', name: 'list', methods: ['GET'])]
-    public function getMedias(
+    #[Route('/public', name: 'create_public', methods: ['POST'])]
+    public function createMediaPublic(
         MediaBusiness $mediaBusiness,
-        #[MapQueryParameter] ?int $page,
-        #[MapQueryParameter] ?int $limit,
-        #[MapQueryParameter] ?string $sort,
-        #[MapQueryParameter] ?string $order,
-        #[MapQueryParameter] ?int    $eventId = null,
-        #[MapQueryParameter] ?int    $roundId = null,
-        #[MapQueryParameter] ?string $name = null,
-        #[MapQueryParameter] ?string $email = null,
-        #[MapQueryParameter] ?string $phone = null,
-        #[MapQueryParameter] ?bool   $selected = null,
-        #[MapQueryParameter] ?bool   $selectedMailSent = null,
-        #[MapQueryParameter] ?bool   $eLearningMailSent = null,
-        #[MapQueryParameter] ?bool   $briefingSeen = null,
-        #[MapQueryParameter] ?bool   $generatePass = null
-    ): JsonResponse
+        Request $request,
+        SerializerInterface $serializer,
+        #[MapUploadedFile] UploadedFile $insuranceFile,
+        #[MapUploadedFile] UploadedFile|array $bookFile
+    ): Response
     {
-        $medias = $mediaBusiness->getMedias(
-            $page ?? 1,
-            $limit ?? 20, $sort,
-            $order,
-            $eventId,
-            $roundId,
-            $name,
-            $email,
-            $phone,
-            $selected,
-            $selectedMailSent,
-            $eLearningMailSent,
-            $briefingSeen,
-            $generatePass
-        );
+        $mediaDto = $request->request->get('media');
+        $mediaDto = $serializer->deserialize($mediaDto, MediaPublicDto::class, 'json');
 
-        return $this->json($medias, Response::HTTP_OK, [], ['groups' => ['media', 'mediaRound', 'round', 'roundDetails', 'roundDetail', 'roundEvent', 'event']]);
+        $mediaBusiness->createPersonMedia($mediaDto, $insuranceFile, !empty($bookFile) ? $bookFile : null);
+
+        return new Response();
     }
 
     #[Route('/public/{uniqueId}', name: 'get_by_uid', methods: ['GET'])]
@@ -72,75 +54,6 @@ class MediaApiController extends AbstractController
         }
 
         return $this->json($media, Response::HTTP_OK, [], ['groups' => ['media', 'mediaRound', 'round', 'roundDetails', 'roundDetail', 'roundEvent', 'event']]);
-    }
-
-    #[Route('/public', name: 'create', methods: ['POST'])]
-    public function createMedia(
-        MediaBusiness $mediaBusiness,
-        Request $request,
-        SerializerInterface $serializer,
-        #[MapUploadedFile] UploadedFile $insuranceFile,
-        #[MapUploadedFile] UploadedFile|array $bookFile
-    ): Response
-    {
-        $mediaDto = $request->request->get('media');
-        $mediaDto = $serializer->deserialize($mediaDto, MediaDto::class, 'json');
-
-        $mediaBusiness->createPersonMedia($mediaDto, $insuranceFile, !empty($bookFile) ? $bookFile : null);
-
-        return new Response();
-    }
-
-    #[Route('/{media}', name: 'update', methods: ['POST'])]
-    public function updateMedia(
-        MediaBusiness $mediaBusiness,
-        Request $request,
-        SerializerInterface $serializer,
-        Media $media,
-        #[MapUploadedFile] UploadedFile|array $insuranceFile,
-        #[MapUploadedFile] UploadedFile|array $bookFile
-    ): Response
-    {
-        $mediaDto = $request->request->get('media');
-        $mediaDto = $serializer->deserialize($mediaDto, MediaDto::class, 'json');
-
-        $mediaBusiness->updatePersonMedia($media, $mediaDto, !empty($insuranceFile) ? $insuranceFile : null, !empty($bookFile) ? $bookFile : null);
-
-        return new Response();
-    }
-
-    #[Route('/{media}', name: 'update_selection', methods: ['PUT'])]
-    public function updateMediaSelection(
-        MediaBusiness $mediaBusiness,
-        Media $media,
-        #[MapRequestPayload] MediaSelectionDto $mediaSelectionDto
-    ): Response
-    {
-        $mediaBusiness->updateMediaSelection($media, $mediaSelectionDto);
-
-        return new Response();
-    }
-
-    #[Route('/{media}', name: 'delete', methods: ['DELETE'])]
-    public function deleteMedia(
-        MediaBusiness $mediaBusiness,
-        Media $media
-    ): Response
-    {
-        $mediaBusiness->deleteMedia($media);
-
-        return new Response(null, Response::HTTP_NO_CONTENT);
-    }
-
-    #[Route('/book/{media}', name: 'delete_book', methods: ['DELETE'])]
-    public function deleteMediaBook(
-        MediaBusiness $mediaBusiness,
-        Media $media
-    ): Response
-    {
-        $media = $mediaBusiness->deleteMediaBook($media);
-
-        return $this->json($media, Response::HTTP_OK, [], ['groups' => ['media', 'mediaRound', 'round', 'roundDetails', 'roundDetail']]);
     }
 
     #[Route('/public/generate-pass/{media}', name: 'generate_pass', methods: ['GET'])]
@@ -191,6 +104,117 @@ class MediaApiController extends AbstractController
         $mediaBusiness->passGenerated($media);
 
         return new Response();
+    }
+
+
+    #[Route('', name: 'list', methods: ['GET'])]
+    public function getMedias(
+        MediaBusiness $mediaBusiness,
+        #[MapQueryParameter] ?int $page,
+        #[MapQueryParameter] ?int $limit,
+        #[MapQueryParameter] ?string $sort,
+        #[MapQueryParameter] ?string $order,
+        #[MapQueryParameter] ?int    $eventId = null,
+        #[MapQueryParameter] ?int    $roundId = null,
+        #[MapQueryParameter] ?string $name = null,
+        #[MapQueryParameter] ?string $email = null,
+        #[MapQueryParameter] ?string $phone = null,
+        #[MapQueryParameter] ?bool   $selected = null,
+        #[MapQueryParameter] ?bool   $selectedMailSent = null,
+        #[MapQueryParameter] ?bool   $eLearningMailSent = null,
+        #[MapQueryParameter] ?bool   $briefingSeen = null,
+        #[MapQueryParameter] ?bool   $generatePass = null
+    ): JsonResponse
+    {
+        $medias = $mediaBusiness->getMedias(
+            $page ?? 1,
+            $limit ?? 20, $sort,
+            $order,
+            $eventId,
+            $roundId,
+            $name,
+            $email,
+            $phone,
+            $selected,
+            $selectedMailSent,
+            $eLearningMailSent,
+            $briefingSeen,
+            $generatePass
+        );
+
+        return $this->json($medias, Response::HTTP_OK, [], ['groups' => ['media', 'mediaRound', 'round', 'roundDetails', 'roundDetail', 'roundEvent', 'event']]);
+    }
+
+    #[Route('', name: 'create', methods: ['POST'])]
+    public function createMedia(
+        MediaBusiness $mediaBusiness,
+        Request $request,
+        SerializerInterface $serializer,
+        #[MapUploadedFile] UploadedFile|array $insuranceFiles,
+        #[MapUploadedFile] UploadedFile|array $bookFiles
+    ): Response
+    {
+        $mediaDto = $request->request->get('media');
+        $mediaDto = $serializer->deserialize($mediaDto, CreateMediaDto::class, 'json');
+
+        $mediaBusiness->createMedia($mediaDto, $insuranceFiles, $bookFiles);
+
+        return new Response();
+    }
+
+    #[Route('/{person}', name: 'update', methods: ['POST'])]
+    public function updateMedia(
+        MediaBusiness $mediaBusiness,
+        Request $request,
+        SerializerInterface $serializer,
+        Person $person,
+        #[MapUploadedFile] UploadedFile|array $insuranceFiles,
+        #[MapUploadedFile] UploadedFile|array $bookFiles
+    ): Response
+    {
+        $mediaDto = $request->request->get('media');
+        $mediaDto = $serializer->deserialize($mediaDto, PersonMediaDto::class, 'json');
+
+        $insuranceFiles = $insuranceFiles instanceof UploadedFile ? [$insuranceFiles] : $insuranceFiles;
+        $bookFiles = $bookFiles instanceof UploadedFile ? [$bookFiles] : $bookFiles;
+
+        $mediaBusiness->updatePersonMedia($person, $mediaDto, $insuranceFiles, $bookFiles);
+
+        return new Response();
+    }
+
+    #[Route('/{media}', name: 'update_selection', methods: ['PUT'])]
+    public function updateMediaSelection(
+        MediaBusiness $mediaBusiness,
+        Media $media,
+        #[MapRequestPayload] MediaSelectionDto $mediaSelectionDto
+    ): Response
+    {
+        $mediaBusiness->updateMediaSelection($media, $mediaSelectionDto);
+
+        return new Response();
+    }
+
+    #[Route('/{media}', name: 'delete', methods: ['DELETE'])]
+    public function deleteMedia(
+        MediaBusiness $mediaBusiness,
+        Media $media
+    ): Response
+    {
+        $mediaBusiness->deleteMedia($media);
+
+        return new Response(null, Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/book/{media}', name: 'delete_book', methods: ['DELETE'])]
+    public function deleteMediaBook(
+        MediaBusiness $mediaBusiness,
+        Media $media
+    ): Response
+    {
+        $media = $mediaBusiness->deleteMediaBook($media);
+
+        return $this->json($media, Response::HTTP_OK, [], ['groups' => ['media', 'mediaRound', 'round', 'roundDetails', 'roundDetail']]);
     }
 
     #[Route('/send-selected-email/{round}', name: 'send_selected_email')]

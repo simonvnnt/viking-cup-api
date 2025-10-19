@@ -1,19 +1,16 @@
 <?php
 
+
 namespace App\Dto;
 
 class MediaDto
 {
     public function __construct(
-        public string $firstName,
-        public string $lastName,
-        public string $email,
-        public string $phone,
-        public int $warnings = 0,
-        public ?string $instagram = null,
-        public ?string $pilotFollow = null,
-        public bool $selected = false,
-        public array $presence = [],
+        public int     $roundId,
+        public ?int    $id = null,
+        public ?bool   $selected = false,
+        public ?string $pilotFollow = null
     )
-    {}
+    {
+    }
 }

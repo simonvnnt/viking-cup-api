@@ -17,6 +17,16 @@ class EventApiController extends AbstractController
     {
         $events = $eventBusiness->getEvents();
 
-        return $this->json($events, 200, [], ['groups' => ['event']]);
+        return $this->json($events, 200, [], ['groups' => ['event', 'eventRounds', 'round', 'roundDetails', 'roundDetail']]);
+    }
+
+    #[Route('/current', name: 'current', methods: ['GET'])]
+    public function getCurrentEvent(
+        EventBusiness $eventBusiness
+    ): Response
+    {
+        $events = $eventBusiness->getCurrentSeason();
+
+        return $this->json($events, 200, [], ['groups' => ['event', 'eventRounds', 'round', 'roundDetails', 'roundDetail']]);
     }
 }

@@ -5,14 +5,20 @@ namespace App\Business;
 use App\Dto\BilletwebTicketDto;
 use App\Entity\BilletwebTicket;
 use App\Entity\Category;
+use App\Entity\Person;
 use App\Entity\Pilot;
 use App\Entity\PilotEvent;
 use App\Entity\PilotRoundCategory;
 use App\Entity\Qualifying;
 use App\Entity\Round;
+use App\Entity\RoundDetail;
+use App\Entity\Visitor;
 use App\Helper\ConfigHelper;
+use App\Helper\PilotHelper;
 use App\Repository\BilletwebTicketRepository;
 use App\Repository\CategoryRepository;
+use App\Repository\EventRepository;
+use App\Repository\PersonRepository;
 use App\Repository\PilotEventRepository;
 use App\Repository\PilotRepository;
 use App\Repository\PilotRoundCategoryRepository;
@@ -31,14 +37,17 @@ class BilletwebBusiness
 {
     public function __construct(
         private readonly BilletwebTicketRepository    $billetwebRepository,
+        private readonly EventRepository              $eventRepository,
         private readonly RoundRepository              $roundRepository,
         private readonly CategoryRepository           $categoryRepository,
+        private readonly PersonRepository             $personRepository,
         private readonly PilotRepository              $pilotRepository,
         private readonly PilotRoundCategoryRepository $pilotRoundCategoryRepository,
         private readonly PilotEventRepository         $pilotEventRepository,
         private readonly QualifyingRepository         $qualifyingRepository,
         private readonly BilletwebService             $billetwebService,
         private readonly ConfigHelper                 $configHelper,
+        private readonly PilotHelper                  $pilotHelper,
         private readonly EntityManagerInterface       $em,
         private SerializerInterface                   $serializer
     )
@@ -48,10 +57,12 @@ class BilletwebBusiness
         $this->serializer = new Serializer([$normalizer, $arrayDenormalizer]);
     }
 
-    public function syncEventAttendees(): void
+    public function syncPilots(): void
     {
         $pilotEventIds = $this->configHelper->getValue('PILOT_EVENT_IDS');
         $pilotEventIds = explode(',', $pilotEventIds);
+        // Get Event Entity
+        $event = $this->eventRepository->find(1);
 
         foreach ($pilotEventIds as $pilotEventId) {
             $eventPilotsData = $this->billetwebService->getEventAttendees($pilotEventId);
@@ -63,39 +74,53 @@ class BilletwebBusiness
             $doubleMountingTickets = [];
             foreach ($eventTickets as $eventTicket) {
                 try {
-                    $billetwebTicket = $this->upsertBilletwebFromDto($eventTicket);
+                    $billetwebTicket = $this->createBilletwebTicketFromDto($eventTicket);
 
-                    if ($billetwebTicket->getPass() === -1) {
+                    if ($billetwebTicket === null || $billetwebTicket->getPass() === -1) {
                         continue;
                     }
 
                     // Get Round Entity
-                    $round = $this->roundRepository->findOneBy(['name' => $billetwebTicket->getTicketLabel()]);
+                    $round = $this->roundRepository->findOneBy(['event' => $event, 'name' => $billetwebTicket->getTicketLabel()]);
 
                     // Get Category Entity
                     $category = $this->categoryRepository->findOneBy(['name' => $billetwebTicket->getCategory()]);
 
                     // Create Pilot Entity
-                    $pilot = $this->pilotRepository->findByFirstNameLastName($billetwebTicket->getPilotFirstName(), $billetwebTicket->getPilotLastName());
-                    if ($pilot === null) {
-                        $pilot = new Pilot();
-                        $pilot->setEmail($billetwebTicket->getPilotEmail())
-                            ->setFirstName($billetwebTicket->getPilotFirstName())
-                            ->setLastName($billetwebTicket->getPilotLastName())
-                            ->setPhoneNumber($billetwebTicket->getCustom()['Portable'] ?? null)
+                    $person = $this->personRepository->findByFirstNameLastName($billetwebTicket->getFirstName(), $billetwebTicket->getLastName());
+                    if ($person === null) {
+                        $person = new Person();
+                        $person->setFirstName($billetwebTicket->getFirstName())
+                            ->setLastName($billetwebTicket->getLastName())
+                            ->setEmail($billetwebTicket->getEmail())
+                            ->setPhone($billetwebTicket->getCustom()['Portable'] ?? null)
                             ->setAddress($billetwebTicket->getCustom()['Adresse'] ?? null)
                             ->setZipCode($billetwebTicket->getCustom()['Code postal'] ?? null)
                             ->setCity($billetwebTicket->getCustom()['Ville'] ?? null)
                             ->setCountry($billetwebTicket->getCustom()['Pays'] ?? null)
                             ->setNationality($billetwebTicket->getCustom()['Nationalité'] ?? null)
+                            ->addRound($round);
+                    }
+
+                    foreach ($round->getRoundDetails() as $roundDetail) {
+                        $person->addRoundDetail($roundDetail);
+                    }
+
+                    $this->em->persist($person);
+
+                    $pilot = $person->getPilot();
+                    if ($pilot === null) {
+                        $pilot = new Pilot();
+                        $pilot->setPerson($person)
                             ->setFfsaLicensee(boolval($billetwebTicket->getCustom()['Etes-vous licencié FFSA ?'] ?? null));
 
                         if ($pilot->getCreatedAt() === null && $billetwebTicket->getCreationDate() !== null) {
                             $pilot->setCreatedAt($billetwebTicket->getCreationDate());
                         }
 
-                        echo 'Nouveau pilote : ' . $billetwebTicket->getPilotFirstName() . ' ' . $billetwebTicket->getPilotLastName() . PHP_EOL;
                         $this->em->persist($pilot);
+
+                        echo 'Nouveau pilote : ' . $billetwebTicket->getFirstName() . ' ' . $billetwebTicket->getLastName() . PHP_EOL;
                     }
 
                     $pilotEvent = $this->pilotEventRepository->findOneBy(['pilot' => $pilot, 'event' => $round->getEvent()]);
@@ -105,11 +130,7 @@ class BilletwebBusiness
                             ->setEvent($round->getEvent())
                             ->setReceiveWindscreenBand(false);
 
-                        $pilotNumberCounter = $category->getPilotNumberCounter();
-                        $pilotNumber = $pilotNumberCounter->getPilotNumberCounter() + 1;
-                        $pilotNumberCounter->setPilotNumberCounter($pilotNumber);
-                        $this->em->persist($pilotNumberCounter);
-
+                        $pilotNumber = $this->pilotHelper->getPilotNumber($round->getEvent(), $category);
                         $pilotEvent->setPilotNumber($pilotNumber);
 
                         $this->em->persist($pilotEvent);
@@ -140,13 +161,115 @@ class BilletwebBusiness
             $this->em->flush();
         }
     }
+    public function syncVisitors(): void
+    {
+        $visitorEventIds = $this->configHelper->getValue('VISITOR_EVENT_IDS');
+        $visitorEventIds = explode(',', $visitorEventIds);
+        $event = $this->eventRepository->find(1);
+        $rounds = [];
 
-    private function upsertBilletwebFromDto(BilletwebTicketDto $billetwebDto): ?BilletwebTicket
+        $persons = [];
+        $companions = [];
+
+        foreach ($visitorEventIds as $visitorEventId) {
+            $eventVisitorsData = $this->billetwebService->getEventAttendees($visitorEventId);
+
+            $eventTickets = $this->serializer->denormalize($eventVisitorsData, BilletwebTicketDto::class . '[]', 'json', [
+                AbstractObjectNormalizer::DISABLE_TYPE_ENFORCEMENT => true
+            ]);
+
+            foreach ($eventTickets as $key => $eventTicket) {
+                try {
+                    $billetwebTicket = $this->createBilletwebTicketFromDto($eventTicket);
+
+                    // Skip if the ticket is a pack
+                    if ($billetwebTicket === null || $billetwebTicket->getPass() === -1 || $billetwebTicket->getTicketLabel() === 'Pass Viking!Cup enfant') {
+                        continue;
+                    }
+
+                    $email = trim($billetwebTicket->getEmail()) ?? trim($billetwebTicket->getBuyerEmail());
+
+                    if (empty($email)) {
+                        continue; // Ignore les tickets sans email
+                    }
+
+                    $category = trim($billetwebTicket->getCategory());
+                    if (!isset($rounds[$category])) {
+                        $rounds[$category] = $this->roundRepository->findOneBy(['event' => $event, 'name' => $billetwebTicket->getCategory()]);
+                    }
+                    $round = $rounds[$category];
+                    if ($round === null) {
+                        continue;
+                    }
+
+                    if (str_contains(strtolower($billetwebTicket->getTicketLabel()), 'week-end')) {
+                        $roundDetails = $round->getRoundDetails();
+                    } else {
+                        $roundDetails = $round->getRoundDetails()->filter(fn(RoundDetail $roundDetail) => str_contains($billetwebTicket->getTicketLabel(), $roundDetail->getName()));
+                    }
+
+                    if ($roundDetails->isEmpty()) {
+                        continue;
+                    }
+
+                    foreach ($roundDetails->toArray() as $roundDetail) {
+                        // if the person does not exist, create it
+                        if (!isset($persons[$email])) {
+                            $person = $this->personRepository->findByEmail($billetwebTicket->getEmail());
+                            if ($person === null) {
+                                $person = new Person();
+                                $person->setFirstName($billetwebTicket->getBuyerFirstName())
+                                    ->setLastName($billetwebTicket->getBuyerLastName())
+                                    ->setEmail($billetwebTicket->getEmail());
+
+                                $this->em->persist($person);
+                            }
+
+                            $persons[$email] = $person;
+                        }
+                        $person = $persons[$email];
+
+                        $person->addRound($round)
+                            ->addRoundDetail($roundDetail);
+
+                        if (!isset($companions[$email][$roundDetail->getId()])) {
+                            $companions[$email][$roundDetail->getId()] = 0;
+                        } else {
+                            $companions[$email][$roundDetail->getId()]++;
+                        }
+
+                        // if the visitor does not exist, create it
+                        $visitor = $person->getVisitors()->filter(fn(Visitor $visitor) => $visitor->getRoundDetail()->getId() === $roundDetail->getId())->first();
+                        if ($visitor === false) {
+                            $visitor = new Visitor();
+                            $visitor->setPerson($person)
+                                ->setRoundDetail($roundDetail)
+                                ->setRegistrationDate($billetwebTicket->getCreationDate());
+
+                            $person->addVisitor($visitor);
+
+                            $this->em->persist($person);
+                        }
+
+                        $visitor->setCompanions($companions[$email][$roundDetail->getId()]);
+                        $this->em->persist($visitor);
+                    }
+                } catch (\Throwable $e) {
+                    $t = $e->getMessage();
+                }
+            }
+
+
+            $this->em->flush();
+        }
+    }
+
+    private function createBilletwebTicketFromDto(BilletwebTicketDto $billetwebDto): ?BilletwebTicket
     {
         $billetweb = $this->billetwebRepository->find($billetwebDto->id);
 
         if ($billetweb !== null) {
-            return $billetweb;
+            return null;
         }
 
         $billetweb = new BilletwebTicket();
@@ -156,9 +279,9 @@ class BilletwebBusiness
             ->setCreationDate(new \DateTime($billetwebDto->orderDate))
             ->setTicketLabel($billetwebDto->ticket)
             ->setCategory($billetwebDto->category)
-            ->setPilotLastName($billetwebDto->name)
-            ->setPilotFirstName($billetwebDto->firstname)
-            ->setPilotEmail($billetwebDto->email)
+            ->setLastName($billetwebDto->name)
+            ->setFirstName($billetwebDto->firstname)
+            ->setEmail($billetwebDto->email)
             ->setBuyerLastName($billetwebDto->orderName)
             ->setBuyerFirstName($billetwebDto->orderFirstname)
             ->setBuyerEmail($billetwebDto->orderEmail)
@@ -169,7 +292,7 @@ class BilletwebBusiness
             ->setUsed($billetwebDto->used)
             ->setUsedDate(!empty($billetwebDto->usedDate) && $billetwebDto->usedDate !== '0000-00-00 00:00:00' ? new \DateTime($billetwebDto->usedDate) : null)
             ->setPass((int)$billetwebDto->pass)
-            ->setCustom($billetwebDto->custom)
+            ->setCustom($billetwebDto->custom ?? [])
             ->setPack((int)$billetwebDto->pass === -1);
 
         $this->em->persist($billetweb);
@@ -209,14 +332,14 @@ class BilletwebBusiness
                 continue;
             }
 
-            if ($mainPilot->getId() === $doubleMountingTicket['pilot']->getId() && isset($pilotAssociation[$doubleMountingTicket['pilot']->getId()])) {
+            if ($mainPilot->getId() === $doubleMountingTicket['pilot']->getId()) {
                 $this->createPilotRoundCategory(
                     $doubleMountingTicket['pilot'],
                     $doubleMountingTicket['round'],
                     $doubleMountingTicket['category'],
                     $doubleMountingTicket['vehicle'],
                     true,
-                    $pilotAssociation[$doubleMountingTicket['pilot']->getId()]
+                    $pilotAssociation[$doubleMountingTicket['pilot']->getId()] ?? null
                 );
             }
         }
@@ -232,12 +355,12 @@ class BilletwebBusiness
                 ->setRound($round)
                 ->setCategory($category)->setVehicle($vehicle)
                 ->setMainPilot($isMainPilot)
-                ->setSecondPilot($secondPilot)
                 ->setIsEngaged(true)
                 ->setIsCompeting(true);
 
-            $this->em->persist($pilotRoundCategory);
         }
+        $pilotRoundCategory->setSecondPilot($secondPilot);
+        $this->em->persist($pilotRoundCategory);
 
         for ($i = 1; $i < 3; $i++) {
             $qualifying = $this->qualifyingRepository->findOneBy(['pilotRoundCategory' => $pilotRoundCategory, 'passage' => $i]);

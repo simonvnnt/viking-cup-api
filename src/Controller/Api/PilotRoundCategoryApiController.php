@@ -35,7 +35,7 @@ class PilotRoundCategoryApiController extends AbstractController
 
         $pilotRoundCategories = $pilotRoundCategoryBusiness->getPilotRoundCategoryPaginate($round, $category, $page, $limit, $sort, $order, $pilot);
 
-        return $this->json($pilotRoundCategories, Response::HTTP_OK, [], ['groups' => ['pilotRoundCategory', 'pilotRoundCategoryPilot', 'pilot', 'pilotEvents', 'pilotEvent', 'pilotRoundCategoryPenalties', 'penalty', 'penalties', 'penaltyPenaltyReason', 'penaltyReason', 'pilotRoundCategoryQualifyings', 'qualifying', 'qualifyingDetails', 'qualifyingDetail', 'qualifyingDetailCriteria', 'qualifyingCriteria']]);
+        return $this->json($pilotRoundCategories, Response::HTTP_OK, [], ['groups' => ['pilotRoundCategory', 'pilotRoundCategoryPilot', 'pilot', 'pilotPerson', 'person', 'pilotEvents', 'pilotEvent', 'pilotRoundCategoryPenalties', 'penalty', 'penalties', 'penaltyPenaltyReason', 'penaltyReason', 'pilotRoundCategoryQualifyings', 'qualifying', 'qualifyingDetails', 'qualifyingDetail', 'qualifyingDetailCriteria', 'qualifyingCriteria']]);
     }
 
     #[Route('/{pilotRoundCategory}', name: 'detail', methods: ['GET'])]
@@ -43,7 +43,7 @@ class PilotRoundCategoryApiController extends AbstractController
         PilotRoundCategory $pilotRoundCategory
     ): Response
     {
-        return $this->json($pilotRoundCategory, Response::HTTP_OK, [], ['groups' => ['pilotRoundCategory', 'pilotRoundCategoryPilot', 'pilot', 'pilotEvents', 'pilotEvent', 'pilotRoundCategoryPenalties', 'penalty', 'penalties', 'penaltyPenaltyReason', 'penaltyReason', 'pilotRoundCategoryQualifyings', 'qualifying', 'qualifyingDetails', 'qualifyingDetail', 'qualifyingDetailCriteria', 'qualifyingCriteria']]);
+        return $this->json($pilotRoundCategory, Response::HTTP_OK, [], ['groups' => ['pilotRoundCategory', 'pilotRoundCategoryPilot', 'pilot', 'pilotPerson', 'person', 'pilotEvents', 'pilotEvent', 'pilotRoundCategoryPenalties', 'penalty', 'penalties', 'penaltyPenaltyReason', 'penaltyReason', 'pilotRoundCategoryQualifyings', 'qualifying', 'qualifyingDetails', 'qualifyingDetail', 'qualifyingDetailCriteria', 'qualifyingCriteria']]);
     }
 
     #[Route('/{pilotRoundCategory}', name: 'update', methods: ['PUT'])]

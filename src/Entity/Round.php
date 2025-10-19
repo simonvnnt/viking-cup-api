@@ -65,6 +65,36 @@ class Round
     #[ORM\OneToMany(targetEntity: Media::class, mappedBy: 'round')]
     private Collection $medias;
 
+    /**
+     * @var Collection<int, Commissaire>
+     */
+    #[ORM\OneToMany(targetEntity: Commissaire::class, mappedBy: 'round')]
+    private Collection $commissaires;
+
+    /**
+     * @var Collection<int, Volunteer>
+     */
+    #[ORM\OneToMany(targetEntity: Volunteer::class, mappedBy: 'round')]
+    private Collection $volunteers;
+
+    /**
+     * @var Collection<int, Rescuer>
+     */
+    #[ORM\OneToMany(targetEntity: Rescuer::class, mappedBy: 'round')]
+    private Collection $rescuers;
+
+    /**
+     * @var Collection<int, Visitor>
+     */
+    #[ORM\OneToMany(targetEntity: Visitor::class, mappedBy: 'round')]
+    private Collection $visitors;
+
+    /**
+     * @var Collection<int, Sponsorship>
+     */
+    #[ORM\OneToMany(targetEntity: Sponsorship::class, mappedBy: 'round')]
+    private Collection $sponsorships;
+
     public function __construct()
     {
         $this->roundDetails = new ArrayCollection();
@@ -72,6 +102,11 @@ class Round
         $this->roundCategories = new ArrayCollection();
         $this->people = new ArrayCollection();
         $this->medias = new ArrayCollection();
+        $this->commissaires = new ArrayCollection();
+        $this->volunteers = new ArrayCollection();
+        $this->rescuers = new ArrayCollection();
+        $this->visitors = new ArrayCollection();
+        $this->sponsorships = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -268,6 +303,156 @@ class Round
             // set the owning side to null (unless already changed)
             if ($media->getRound() === $this) {
                 $media->setRound(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Commissaire>
+     */
+    public function getCommissaires(): Collection
+    {
+        return $this->commissaires;
+    }
+
+    public function addCommissaire(Commissaire $commissaire): static
+    {
+        if (!$this->commissaires->contains($commissaire)) {
+            $this->commissaires->add($commissaire);
+            $commissaire->setRound($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCommissaire(Commissaire $commissaire): static
+    {
+        if ($this->commissaires->removeElement($commissaire)) {
+            // set the owning side to null (unless already changed)
+            if ($commissaire->getRound() === $this) {
+                $commissaire->setRound(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Volunteer>
+     */
+    public function getVolunteers(): Collection
+    {
+        return $this->volunteers;
+    }
+
+    public function addVolunteer(Volunteer $volunteer): static
+    {
+        if (!$this->volunteers->contains($volunteer)) {
+            $this->volunteers->add($volunteer);
+            $volunteer->setRound($this);
+        }
+
+        return $this;
+    }
+
+    public function removeVolunteer(Volunteer $volunteer): static
+    {
+        if ($this->volunteers->removeElement($volunteer)) {
+            // set the owning side to null (unless already changed)
+            if ($volunteer->getRound() === $this) {
+                $volunteer->setRound(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Rescuer>
+     */
+    public function getRescuers(): Collection
+    {
+        return $this->rescuers;
+    }
+
+    public function addRescuer(Rescuer $rescuer): static
+    {
+        if (!$this->rescuers->contains($rescuer)) {
+            $this->rescuers->add($rescuer);
+            $rescuer->setRound($this);
+        }
+
+        return $this;
+    }
+
+    public function removeRescuer(Rescuer $rescuer): static
+    {
+        if ($this->rescuers->removeElement($rescuer)) {
+            // set the owning side to null (unless already changed)
+            if ($rescuer->getRound() === $this) {
+                $rescuer->setRound(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Visitor>
+     */
+    public function getVisitors(): Collection
+    {
+        return $this->visitors;
+    }
+
+    public function addVisitor(Visitor $visitor): static
+    {
+        if (!$this->visitors->contains($visitor)) {
+            $this->visitors->add($visitor);
+            $visitor->setRound($this);
+        }
+
+        return $this;
+    }
+
+    public function removeVisitor(Visitor $visitor): static
+    {
+        if ($this->visitors->removeElement($visitor)) {
+            // set the owning side to null (unless already changed)
+            if ($visitor->getRound() === $this) {
+                $visitor->setRound(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Sponsorship>
+     */
+    public function getSponsorships(): Collection
+    {
+        return $this->sponsorships;
+    }
+
+    public function addSponsorship(Sponsorship $sponsorship): static
+    {
+        if (!$this->sponsorships->contains($sponsorship)) {
+            $this->sponsorships->add($sponsorship);
+            $sponsorship->setRound($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSponsorship(Sponsorship $sponsorship): static
+    {
+        if ($this->sponsorships->removeElement($sponsorship)) {
+            // set the owning side to null (unless already changed)
+            if ($sponsorship->getRound() === $this) {
+                $sponsorship->setRound(null);
             }
         }
 

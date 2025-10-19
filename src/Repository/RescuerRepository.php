@@ -2,39 +2,39 @@
 
 namespace App\Repository;
 
-use App\Entity\PersonType;
+use App\Entity\Rescuer;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<PersonType>
+ * @extends ServiceEntityRepository<Rescuer>
  */
-class PersonTypeRepository extends ServiceEntityRepository
+class RescuerRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, PersonType::class);
+        parent::__construct($registry, Rescuer::class);
     }
 
     //    /**
-    //     * @return PersonType[] Returns an array of PersonType objects
+    //     * @return Rescuer[] Returns an array of Rescuer objects
     //     */
     //    public function findByExampleField($value): array
     //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
+    //        return $this->createQueryBuilder('r')
+    //            ->andWhere('r.exampleField = :val')
     //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
+    //            ->orderBy('r.id', 'ASC')
     //            ->setMaxResults(10)
     //            ->getQuery()
     //            ->getResult()
     //        ;
     //    }
 
-    //    public function findOneBySomeField($value): ?PersonType
+    //    public function findOneBySomeField($value): ?Rescuer
     //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
+    //        return $this->createQueryBuilder('r')
+    //            ->andWhere('r.exampleField = :val')
     //            ->setParameter('val', $value)
     //            ->getQuery()
     //            ->getOneOrNullResult()
