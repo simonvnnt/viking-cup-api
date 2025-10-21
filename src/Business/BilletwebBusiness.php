@@ -12,6 +12,7 @@ use App\Entity\PilotRoundCategory;
 use App\Entity\Qualifying;
 use App\Entity\Round;
 use App\Entity\RoundDetail;
+use App\Entity\Vehicle;
 use App\Entity\Visitor;
 use App\Helper\ConfigHelper;
 use App\Helper\PilotHelper;
@@ -24,6 +25,7 @@ use App\Repository\PilotRepository;
 use App\Repository\PilotRoundCategoryRepository;
 use App\Repository\QualifyingRepository;
 use App\Repository\RoundRepository;
+use App\Repository\VehicleRepository;
 use App\Service\BilletwebService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Serializer\NameConverter\CamelCaseToSnakeCaseNameConverter;
@@ -45,6 +47,7 @@ class BilletwebBusiness
         private readonly PilotRoundCategoryRepository $pilotRoundCategoryRepository,
         private readonly PilotEventRepository         $pilotEventRepository,
         private readonly QualifyingRepository         $qualifyingRepository,
+        private readonly VehicleRepository            $vehicleRepository,
         private readonly BilletwebService             $billetwebService,
         private readonly ConfigHelper                 $configHelper,
         private readonly PilotHelper                  $pilotHelper,
@@ -346,10 +349,16 @@ class BilletwebBusiness
 
     }
 
-    private function createPilotRoundCategory(Pilot $pilot, Round $round, Category $category, ?string $vehicle, bool $isMainPilot = true, ?Pilot $secondPilot = null): void
+    private function createPilotRoundCategory(Pilot $pilot, Round $round, Category $category, ?string $vehicleModel, bool $isMainPilot = true, ?Pilot $secondPilot = null): void
     {
         $pilotRoundCategory = $this->pilotRoundCategoryRepository->findOneBy(['pilot' => $pilot, 'round' => $round, 'category' => $category]);
         if ($pilotRoundCategory === null) {
+            $vehicle = $this->vehicleRepository->findOneBy(['model' => $vehicleModel]);
+            if ($vehicle === null) {
+                $vehicle = new Vehicle();
+                $vehicle->setModel($vehicleModel);
+            }
+
             $pilotRoundCategory = new PilotRoundCategory();
             $pilotRoundCategory->setPilot($pilot)
                 ->setRound($round)
@@ -357,6 +366,17 @@ class BilletwebBusiness
                 ->setMainPilot($isMainPilot)
                 ->setIsEngaged(true)
                 ->setIsCompeting(true);
+
+            if ($pilotRoundCategory->isMainPilot()) {
+                $vehicle = new Vehicle();
+                $vehicle->setModel($vehicleModel);
+                $this->em->persist($vehicle);
+            } else {
+                $mainPilotRoundCategory = $this->pilotRoundCategoryRepository->findOneBy(['secondPilot' => $pilot, 'round' => $round, 'category' => $category, 'mainPilot' => true]);
+                if ($mainPilotRoundCategory !== null) {
+                    $pilotRoundCategory->setVehicle($mainPilotRoundCategory->getVehicle());
+                }
+            }
 
         }
         $pilotRoundCategory->setSecondPilot($secondPilot);

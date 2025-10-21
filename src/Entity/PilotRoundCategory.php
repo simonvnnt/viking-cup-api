@@ -36,9 +36,8 @@ class PilotRoundCategory
     #[ORM\Column]
     private ?bool $mainPilot = true;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['pilotRoundCategory'])]
-    private ?string $vehicle = null;
+    #[ORM\ManyToOne(inversedBy: 'pilotRoundCategories')]
+    private ?Vehicle $vehicle = null;
 
     #[ORM\Column(options: ['default' => true])]
     #[Groups(['pilotRoundCategory'])]
@@ -133,12 +132,12 @@ class PilotRoundCategory
         return $this;
     }
 
-    public function getVehicle(): ?string
+    public function getVehicle(): ?Vehicle
     {
         return $this->vehicle;
     }
 
-    public function setVehicle(?string $vehicle): static
+    public function setVehicle(?Vehicle $vehicle): static
     {
         $this->vehicle = $vehicle;
 

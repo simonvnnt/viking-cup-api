@@ -12,6 +12,7 @@ use App\Entity\Person;
 use App\Entity\PilotEvent;
 use App\Entity\PilotRoundCategory;
 use App\Entity\Qualifying;
+use App\Entity\Vehicle;
 use App\Helper\LinkHelper;
 use App\Helper\PilotHelper;
 use App\Repository\CategoryRepository;
@@ -187,7 +188,19 @@ readonly class PilotBusiness
                 $pilot->addPilotRoundCategory($pilotRoundCategory);
             }
 
-            $pilotRoundCategory->setVehicle($roundPresence->vehicle);
+            $vehicle = $pilotRoundCategory->getVehicle();
+            if (!empty($roundPresence->vehicle)) {
+                if ($vehicle === null) {
+                    $vehicle = new Vehicle();
+                    $vehicle->setModel($roundPresence->vehicle);
+                    $pilotRoundCategory->setVehicle($vehicle);
+                } else {
+                    $vehicle->setModel($roundPresence->vehicle);
+                }
+
+                $this->em->persist($vehicle);
+            }
+
             $this->em->persist($pilotRoundCategory);
 
             for ($i = 1; $i < 3; $i++) {
