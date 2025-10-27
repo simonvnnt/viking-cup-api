@@ -21,11 +21,12 @@ class AccountingRepository extends ServiceEntityRepository
         int     $limit = 50,
         ?string $sort = null,
         ?string $order = null,
+        ?string $accountingType = null,
         ?int    $eventId = null,
         ?int    $roundId = null,
         ?string $name = null,
         ?string $iteration = null,
-        ?int    $accountingTypeId = null,
+        ?int    $accountingCategoryId = null,
         ?float  $minUnitPrice = null,
         ?float  $maxUnitPrice = null,
         ?int    $minQuantity = null,
@@ -40,6 +41,10 @@ class AccountingRepository extends ServiceEntityRepository
 
         $qb = $this->createQueryBuilder('a');
 
+        if ($accountingType !== null) {
+            $qb->andWhere('a.accountingType = :accountingType')
+                ->setParameter('accountingType', $accountingType);
+        }
         if ($eventId !== null) {
             $qb->andWhere('a.event = :eventId')
                 ->setParameter('eventId', $eventId);
@@ -56,9 +61,9 @@ class AccountingRepository extends ServiceEntityRepository
             $qb->andWhere('a.iteration = :iteration')
                 ->setParameter('iteration', $iteration);
         }
-        if ($accountingTypeId !== null) {
-            $qb->andWhere('a.accountingType = :accountingTypeId')
-                ->setParameter('accountingTypeId', $accountingTypeId);
+        if ($accountingCategoryId !== null) {
+            $qb->andWhere('a.accountingCategory = :accountingCategoryId')
+                ->setParameter('accountingCategoryId', $accountingCategoryId);
         }
         if ($minUnitPrice !== null) {
             $qb->andWhere('a.unitPrice >= :minUnitPrice')

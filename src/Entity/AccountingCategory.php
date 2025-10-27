@@ -2,30 +2,30 @@
 
 namespace App\Entity;
 
-use App\Repository\AccountingTypeRepository;
+use App\Repository\AccountingCategoryRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 
-#[ORM\Entity(repositoryClass: AccountingTypeRepository::class)]
-class AccountingType
+#[ORM\Entity(repositoryClass: AccountingCategoryRepository::class)]
+class AccountingCategory
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups('accountingType')]
+    #[Groups('accountingCategory')]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups('accountingType')]
+    #[Groups('accountingCategory')]
     private ?string $name = null;
 
     /**
      * @var Collection<int, Accounting>
      */
-    #[ORM\OneToMany(targetEntity: Accounting::class, mappedBy: 'accountingType')]
-    #[Groups('accountingTypeAccountings')]
+    #[ORM\OneToMany(targetEntity: Accounting::class, mappedBy: 'accountingCategory')]
+    #[Groups('accountingCategoryAccountings')]
     private Collection $accountings;
 
     public function __construct()
@@ -62,7 +62,7 @@ class AccountingType
     {
         if (!$this->accountings->contains($accounting)) {
             $this->accountings->add($accounting);
-            $accounting->setAccountingType($this);
+            $accounting->setAccountingCategory($this);
         }
 
         return $this;
@@ -72,8 +72,8 @@ class AccountingType
     {
         if ($this->accountings->removeElement($accounting)) {
             // set the owning side to null (unless already changed)
-            if ($accounting->getAccountingType() === $this) {
-                $accounting->setAccountingType(null);
+            if ($accounting->getAccountingCategory() === $this) {
+                $accounting->setAccountingCategory(null);
             }
         }
 

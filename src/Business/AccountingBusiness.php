@@ -4,10 +4,11 @@ namespace App\Business;
 
 use App\Dto\AccountingDto;
 use App\Entity\Accounting;
+use App\Enum\AccountingType;
 use App\Enum\IterationType;
 use App\Helper\FileHelper;
 use App\Repository\AccountingRepository;
-use App\Repository\AccountingTypeRepository;
+use App\Repository\AccountingCategoryRepository;
 use App\Repository\EventRepository;
 use App\Repository\RoundRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -16,12 +17,12 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 readonly class AccountingBusiness
 {
     public function __construct(
-        private AccountingRepository   $accountingRepository,
-        private AccountingTypeRepository $accountingTypeRepository,
-        private RoundRepository $roundRepository,
-        private EventRepository $eventRepository,
-        private FileHelper $fileHelper,
-        private EntityManagerInterface $em
+        private AccountingRepository         $accountingRepository,
+        private AccountingCategoryRepository $accountingCategoryRepository,
+        private RoundRepository              $roundRepository,
+        private EventRepository              $eventRepository,
+        private FileHelper                   $fileHelper,
+        private EntityManagerInterface       $em
     )
     {}
 
@@ -30,6 +31,7 @@ readonly class AccountingBusiness
         int $limit,
         ?string $sort = null,
         ?string $order = null,
+        ?string $accountingType = null,
         ?int    $eventId = null,
         ?int    $roundId = null,
         ?string $name = null,
@@ -50,6 +52,7 @@ readonly class AccountingBusiness
             $limit,
             $sort,
             $order,
+            $accountingType,
             $eventId,
             $roundId,
             $name,
@@ -80,6 +83,7 @@ readonly class AccountingBusiness
         $accounting = new Accounting();
         $accounting->setName($accountingDto->name)
             ->setIteration($accountingDto->iteration !== null ? IterationType::from($accountingDto->iteration) : null)
+            ->setAccountingType(AccountingType::from($accountingDto->accountingType))
             ->setUnitPrice($accountingDto->unitPrice ?? 0.0)
             ->setQuantity($accountingDto->quantity ?? 0)
             ->setDate($accountingDto->date !== null ? new \DateTimeImmutable($accountingDto->date) : new \DateTimeImmutable())
@@ -101,10 +105,10 @@ readonly class AccountingBusiness
             }
         }
 
-        if ($accountingDto->accountingTypeId !== null) {
-            $accountingType = $this->accountingTypeRepository->find($accountingDto->accountingTypeId);
-            if ($accountingType) {
-                $accounting->setAccountingType($accountingType);
+        if ($accountingDto->accountingCategoryId !== null) {
+            $accountingCategory = $this->accountingCategoryRepository->find($accountingDto->accountingCategoryId);
+            if ($accountingCategory) {
+                $accounting->setAccountingCategory($accountingCategory);
             }
         }
 
@@ -127,31 +131,20 @@ readonly class AccountingBusiness
     {
         $accounting->setName($accountingDto->name)
             ->setIteration($accountingDto->iteration !== null ? IterationType::from($accountingDto->iteration) : null)
+            ->setAccountingType(AccountingType::from($accountingDto->accountingType))
             ->setUnitPrice($accountingDto->unitPrice ?? 0.0)
             ->setQuantity($accountingDto->quantity ?? 0)
             ->setDate($accountingDto->date !== null ? new \DateTimeImmutable($accountingDto->date) : $accounting->getDate())
             ->setIsDone($accountingDto->isDone ?? false)
             ->setIsConfirmed($accountingDto->isConfirmed ?? false)
-            ->setComment($accountingDto->comment);
+            ->setComment($accountingDto->comment)
+            ->setRound($accountingDto->roundId !== null ? $this->roundRepository->find($accountingDto->roundId) : null)
+            ->setEvent($accountingDto->eventId !== null ? $this->eventRepository->find($accountingDto->eventId) : null);
 
-        if ($accountingDto->roundId !== null) {
-            $round = $this->roundRepository->find($accountingDto->roundId);
-            if ($round) {
-                $accounting->setRound($round);
-            }
-        }
-
-        if ($accountingDto->eventId !== null) {
-            $event = $this->eventRepository->find($accountingDto->eventId);
-            if ($event) {
-                $accounting->setEvent($event);
-            }
-        }
-
-        if ($accountingDto->accountingTypeId !== null) {
-            $accountingType = $this->accountingTypeRepository->find($accountingDto->accountingTypeId);
+        if ($accountingDto->accountingCategoryId !== null) {
+            $accountingType = $this->accountingCategoryRepository->find($accountingDto->accountingCategoryId);
             if ($accountingType) {
-                $accounting->setAccountingType($accountingType);
+                $accounting->setAccountingCategory($accountingType);
             }
         }
 

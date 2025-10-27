@@ -25,11 +25,12 @@ class AccountingApiController extends AbstractController
         #[MapQueryParameter] ?int $limit,
         #[MapQueryParameter] ?string $sort,
         #[MapQueryParameter] ?string $order,
+        #[MapQueryParameter] ?string $accountingType = null,
         #[MapQueryParameter] ?int    $eventId = null,
         #[MapQueryParameter] ?int    $roundId = null,
         #[MapQueryParameter] ?string $name = null,
         #[MapQueryParameter] ?string $iteration = null,
-        #[MapQueryParameter] ?int    $accountingTypeId = null,
+        #[MapQueryParameter] ?int    $accountingCategoryId = null,
         #[MapQueryParameter] ?float  $minUnitPrice = null,
         #[MapQueryParameter] ?float  $maxUnitPrice = null,
         #[MapQueryParameter] ?int    $minQuantity = null,
@@ -45,11 +46,12 @@ class AccountingApiController extends AbstractController
             $limit ?? 50,
             $sort,
             $order,
+            $accountingType,
             $eventId,
             $roundId,
             $name,
             $iteration,
-            $accountingTypeId,
+            $accountingCategoryId,
             $minUnitPrice,
             $maxUnitPrice,
             $minQuantity,
@@ -60,7 +62,7 @@ class AccountingApiController extends AbstractController
             $isConfirmed
         );
 
-        return $this->json($accountings, Response::HTTP_OK, [], ['groups' => ['accounting', 'accountingAccountingType', 'accountingType', 'accountingRound', 'round', 'roundEvent', 'accountingEvent', 'event']]);
+        return $this->json($accountings, Response::HTTP_OK, [], ['groups' => ['accounting', 'accountingAccountingCategory', 'accountingCategory', 'accountingRound', 'round', 'roundEvent', 'accountingEvent', 'event']]);
     }
 
     #[Route('', name: 'create', methods: ['POST'])]
@@ -76,7 +78,7 @@ class AccountingApiController extends AbstractController
 
         $accounting = $accountingBusiness->createAccounting($accountingDto, !empty($invoiceFile) ? $invoiceFile : null);
 
-        return $this->json($accounting, Response::HTTP_CREATED, [], ['groups' => ['accounting', 'accountingAccountingType', 'accountingType']]);
+        return $this->json($accounting, Response::HTTP_CREATED, [], ['groups' => ['accounting', 'accountingAccountingCategory', 'accountingCategory']]);
     }
 
     #[Route('/{accounting}', name: 'update', methods: ['POST'])]
@@ -104,7 +106,7 @@ class AccountingApiController extends AbstractController
     {
         $accounting = $accountingBusiness->deleteAccountingInvoice($accounting);
 
-        return $this->json($accounting, Response::HTTP_OK, [], ['groups' => ['accounting', 'accountingAccountingType', 'accountingType']]);
+        return $this->json($accounting, Response::HTTP_OK, [], ['groups' => ['accounting', 'accountingAccountingCategory', 'accountingCategory']]);
     }
 
     #[Route('/{accounting}', name: 'delete', methods: ['DELETE'])]

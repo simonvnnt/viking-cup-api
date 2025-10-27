@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\AccountingType;
 use App\Enum\IterationType;
 use App\Repository\AccountingRepository;
 use Doctrine\DBAL\Types\Types;
@@ -54,8 +55,8 @@ class Accounting
     private ?IterationType $iteration = null;
 
     #[ORM\ManyToOne(inversedBy: 'accountings')]
-    #[Groups('accountingAccountingType')]
-    private ?AccountingType $accountingType = null;
+    #[Groups('accountingAccountingCategory')]
+    private ?AccountingCategory $accountingCategory = null;
 
     #[ORM\ManyToOne(inversedBy: 'accountings')]
     #[Groups('accountingRound')]
@@ -64,6 +65,10 @@ class Accounting
     #[ORM\ManyToOne(inversedBy: 'accountings')]
     #[Groups('accountingEvent')]
     private ?Event $event = null;
+
+    #[ORM\Column(enumType: AccountingType::class)]
+    #[Groups('accounting')]
+    private ?AccountingType $accountingType = null;
 
     public function getId(): ?int
     {
@@ -178,14 +183,14 @@ class Accounting
         return $this;
     }
 
-    public function getAccountingType(): ?AccountingType
+    public function getAccountingCategory(): ?AccountingCategory
     {
-        return $this->accountingType;
+        return $this->accountingCategory;
     }
 
-    public function setAccountingType(?AccountingType $accountingType): static
+    public function setAccountingCategory(?AccountingCategory $accountingCategory): static
     {
-        $this->accountingType = $accountingType;
+        $this->accountingCategory = $accountingCategory;
 
         return $this;
     }
@@ -210,6 +215,18 @@ class Accounting
     public function setEvent(?Event $event): static
     {
         $this->event = $event;
+
+        return $this;
+    }
+
+    public function getAccountingType(): ?AccountingType
+    {
+        return $this->accountingType;
+    }
+
+    public function setAccountingType(AccountingType $accountingType): static
+    {
+        $this->accountingType = $accountingType;
 
         return $this;
     }
