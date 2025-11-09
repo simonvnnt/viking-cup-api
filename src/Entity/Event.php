@@ -14,15 +14,15 @@ class Event
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['event'])]
+    #[Groups(['event', 'sponsor:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['event'])]
+    #[Groups(['event', 'sponsor:read'])]
     private ?string $name = null;
 
     #[ORM\Column]
-    #[Groups(['event'])]
+    #[Groups(['event', 'sponsor:read'])]
     private ?int $year = null;
 
     /**

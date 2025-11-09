@@ -60,6 +60,7 @@ class Sponsor
      * @var Collection<int, Sponsorship>
      */
     #[ORM\OneToMany(targetEntity: Sponsorship::class, mappedBy: 'sponsor')]
+    #[Groups(['sponsorSponsorships', 'sponsor:read'])]
     private Collection $sponsorships;
 
     #[ORM\Column]
