@@ -27,7 +27,7 @@ class AccountingCategoryApiController extends AbstractController
     }
 
     #[Route('', name: 'create', methods: ['POST'])]
-    public function createCommissaireType(
+    public function createAccountingCategory(
         AccountingCategoryBusiness $accountingCategoryBusiness,
         #[MapRequestPayload] AccountingCategoryDto $accountingCategoryDto
     ): Response
@@ -38,7 +38,7 @@ class AccountingCategoryApiController extends AbstractController
     }
 
     #[Route('/{accountingCategory}', name: 'delete', methods: ['DELETE'])]
-    public function deleteCommissaireType(
+    public function deleteAccountingCategory(
         AccountingCategoryBusiness $accountingCategoryBusiness,
         AccountingCategory $accountingCategory
     ): Response
