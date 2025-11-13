@@ -2,16 +2,22 @@
 
 namespace App\Entity;
 
-use App\Repository\BilletwebTicketRepository;
+use App\Repository\TicketRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: BilletwebTicketRepository::class)]
-class BilletwebTicket
+#[ORM\Entity(repositoryClass: TicketRepository::class)]
+class Ticket
 {
     #[ORM\Id]
+    #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $externalId = null;
 
     #[ORM\Column(length: 255)]
     private ?string $ticketNumber = null;
@@ -25,8 +31,17 @@ class BilletwebTicket
     #[ORM\Column(length: 255)]
     private ?string $ticketLabel = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $category = null;
+    #[ORM\ManyToOne(inversedBy: 'tickets')]
+    private ?Category $category = null;
+
+    #[ORM\ManyToOne(inversedBy: 'tickets')]
+    private ?Round $round = null;
+
+    /**
+     * @var Collection<int, RoundDetail>
+     */
+    #[ORM\ManyToMany(targetEntity: RoundDetail::class, inversedBy: 'tickets')]
+    private Collection $roundDetails;
 
     #[ORM\Column(length: 255)]
     private ?string $lastName = null;
@@ -70,14 +85,48 @@ class BilletwebTicket
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $usedDate = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?int $pass = null;
 
     #[ORM\Column]
-    private array $custom = [];
-
-    #[ORM\Column]
     private bool $pack = false;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $address = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $city = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $zipCode = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $country = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $nationality = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $phone = null;
+
+    /**
+     * @var Collection<int, PilotRoundCategory>
+     */
+    #[ORM\ManyToMany(targetEntity: PilotRoundCategory::class, inversedBy: 'tickets')]
+    private Collection $pilotRoundCategory;
+
+    /**
+     * @var Collection<int, Visitor>
+     */
+    #[ORM\ManyToMany(targetEntity: Visitor::class, inversedBy: 'tickets')]
+    private Collection $visitors;
+
+    public function __construct()
+    {
+        $this->roundDetails = new ArrayCollection();
+        $this->pilotRoundCategory = new ArrayCollection();
+        $this->visitors = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -87,6 +136,18 @@ class BilletwebTicket
     public function setId(int $id): static
     {
         $this->id = $id;
+
+        return $this;
+    }
+
+    public function getExternalId(): ?string
+    {
+        return $this->externalId;
+    }
+
+    public function setExternalId(?string $externalId): static
+    {
+        $this->externalId = $externalId;
 
         return $this;
     }
@@ -139,14 +200,50 @@ class BilletwebTicket
         return $this;
     }
 
-    public function getCategory(): ?string
+    public function getCategory(): ?Category
     {
         return $this->category;
     }
 
-    public function setCategory(string $category): static
+    public function setCategory(?Category $category): static
     {
         $this->category = $category;
+
+        return $this;
+    }
+
+    public function getRound(): ?Round
+    {
+        return $this->round;
+    }
+
+    public function setRound(?Round $round): static
+    {
+        $this->round = $round;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, RoundDetail>
+     */
+    public function getRoundDetails(): Collection
+    {
+        return $this->roundDetails;
+    }
+
+    public function addRoundDetail(RoundDetail $roundDetail): static
+    {
+        if (!$this->roundDetails->contains($roundDetail)) {
+            $this->roundDetails->add($roundDetail);
+        }
+
+        return $this;
+    }
+
+    public function removeRoundDetail(RoundDetail $roundDetail): static
+    {
+        $this->roundDetails->removeElement($roundDetail);
 
         return $this;
     }
@@ -331,18 +428,6 @@ class BilletwebTicket
         return $this;
     }
 
-    public function getCustom(): array
-    {
-        return $this->custom;
-    }
-
-    public function setCustom(array $custom): static
-    {
-        $this->custom = $custom;
-
-        return $this;
-    }
-
     public function isPack(): bool
     {
         return $this->pack;
@@ -351,6 +436,126 @@ class BilletwebTicket
     public function setPack(bool $pack): static
     {
         $this->pack = $pack;
+
+        return $this;
+    }
+
+    public function getAddress(): ?string
+    {
+        return $this->address;
+    }
+
+    public function setAddress(?string $address): static
+    {
+        $this->address = $address;
+
+        return $this;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function setCity(?string $city): static
+    {
+        $this->city = $city;
+
+        return $this;
+    }
+
+    public function getZipCode(): ?string
+    {
+        return $this->zipCode;
+    }
+
+    public function setZipCode(?string $zipCode): static
+    {
+        $this->zipCode = $zipCode;
+
+        return $this;
+    }
+
+    public function getCountry(): ?string
+    {
+        return $this->country;
+    }
+
+    public function setCountry(?string $country): static
+    {
+        $this->country = $country;
+
+        return $this;
+    }
+
+    public function getNationality(): ?string
+    {
+        return $this->nationality;
+    }
+
+    public function setNationality(?string $nationality): static
+    {
+        $this->nationality = $nationality;
+
+        return $this;
+    }
+
+    public function getPhone(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function setPhone(?string $phone): static
+    {
+        $this->phone = $phone;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, PilotRoundCategory>
+     */
+    public function getPilotRoundCategory(): Collection
+    {
+        return $this->pilotRoundCategory;
+    }
+
+    public function addPilotRoundCategory(PilotRoundCategory $driverRoundCategory): static
+    {
+        if (!$this->pilotRoundCategory->contains($driverRoundCategory)) {
+            $this->pilotRoundCategory->add($driverRoundCategory);
+        }
+
+        return $this;
+    }
+
+    public function removePilotRoundCategory(PilotRoundCategory $driverRoundCategory): static
+    {
+        $this->pilotRoundCategory->removeElement($driverRoundCategory);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Visitor>
+     */
+    public function getVisitors(): Collection
+    {
+        return $this->visitors;
+    }
+
+    public function addVisitor(Visitor $visitor): static
+    {
+        if (!$this->visitors->contains($visitor)) {
+            $this->visitors->add($visitor);
+        }
+
+        return $this;
+    }
+
+    public function removeVisitor(Visitor $visitor): static
+    {
+        $this->visitors->removeElement($visitor);
 
         return $this;
     }

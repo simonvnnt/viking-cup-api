@@ -13,7 +13,7 @@ use App\Entity\PilotEvent;
 use App\Entity\PilotRoundCategory;
 use App\Entity\Qualifying;
 use App\Helper\LinkHelper;
-use App\Helper\PilotHelper;
+use App\Helper\DriverHelper;
 use App\Repository\CategoryRepository;
 use App\Repository\EventRepository;
 use App\Repository\PersonRepository;
@@ -30,7 +30,7 @@ readonly class PilotBusiness
         private RoundRepository        $roundRepository,
         private CategoryRepository     $categoryRepository,
         private LinkHelper             $linkHelper,
-        private PilotHelper            $pilotHelper,
+        private DriverHelper           $pilotHelper,
         private SerializerInterface    $serializer,
         private EntityManagerInterface $em
     )
@@ -104,7 +104,7 @@ readonly class PilotBusiness
                 $pilotRoundCategories = $pilot->getPilotRoundCategories()->first();
                 if ($pilotRoundCategories !== false) {
                     $category = $pilotRoundCategories->getCategory();
-                    $pilotNumber = $this->pilotHelper->getPilotNumber($event, $category ?? null, $pilotDto->number);
+                    $pilotNumber = $this->pilotHelper->getDriverNumber($event, $category ?? null, $pilotDto->number);
                 }
 
                 $pilotEvent->setPilotNumber($pilotNumber ?? null)

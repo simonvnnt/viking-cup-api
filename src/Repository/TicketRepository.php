@@ -2,17 +2,17 @@
 
 namespace App\Repository;
 
-use App\Entity\BilletwebTicket;
+use App\Entity\Ticket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<BilletwebTicket>
+ * @extends ServiceEntityRepository<Ticket>
  */
-class BilletwebTicketRepository extends ServiceEntityRepository
+class TicketRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, BilletwebTicket::class);
+        parent::__construct($registry, Ticket::class);
     }
 }
