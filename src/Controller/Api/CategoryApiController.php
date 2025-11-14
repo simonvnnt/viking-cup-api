@@ -17,6 +17,6 @@ class CategoryApiController extends AbstractController
     {
         $categories = $categoryBusiness->getCategories();
 
-        return $this->json($categories, 200, [], ['groups' => ['category']]);
+        return $this->json($categories, 200, [], ['groups' => ['category', 'categoryEvents', 'event']]);
     }
 }

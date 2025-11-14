@@ -39,11 +39,19 @@ class Category
     #[ORM\OneToMany(targetEntity: PilotNumberCounter::class, mappedBy: 'category')]
     private Collection $pilotNumberCounters;
 
+    /**
+     * @var Collection<int, Event>
+     */
+    #[ORM\ManyToMany(targetEntity: Event::class, mappedBy: 'categories')]
+    #[Groups(['categoryEvents'])]
+    private Collection $events;
+
     public function __construct()
     {
         $this->pilotRoundCategories = new ArrayCollection();
         $this->roundCategories = new ArrayCollection();
         $this->pilotNumberCounters = new ArrayCollection();
+        $this->events = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -148,6 +156,33 @@ class Category
             if ($pilotNumberCounter->getCategory() === $this) {
                 $pilotNumberCounter->setCategory(null);
             }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Event>
+     */
+    public function getEvents(): Collection
+    {
+        return $this->events;
+    }
+
+    public function addEvent(Event $event): static
+    {
+        if (!$this->events->contains($event)) {
+            $this->events->add($event);
+            $event->addCategory($this);
+        }
+
+        return $this;
+    }
+
+    public function removeEvent(Event $event): static
+    {
+        if ($this->events->removeElement($event)) {
+            $event->removeCategory($this);
         }
 
         return $this;
