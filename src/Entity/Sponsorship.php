@@ -17,7 +17,7 @@ class Sponsorship
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['sponsorship'])]
+    #[Groups(['sponsorship', 'sponsor:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'sponsorships')]
@@ -25,11 +25,11 @@ class Sponsorship
     private ?Sponsor $sponsor = null;
 
     #[ORM\ManyToOne(inversedBy: 'sponsorships')]
-    #[Groups(['sponsorshipEvent'])]
+    #[Groups(['sponsorshipEvent', 'sponsor:read'])]
     private ?Event $event = null;
 
     #[ORM\ManyToOne(inversedBy: 'sponsorships')]
-    #[Groups(['sponsorshipRound'])]
+    #[Groups(['sponsorshipRound', 'sponsor:read'])]
     private ?Round $round = null;
 
     #[ORM\Column(length: 255, nullable: true)]

@@ -15,15 +15,15 @@ class Round
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['round'])]
+    #[Groups(['round', 'sponsor:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['round'])]
+    #[Groups(['round', 'sponsor:read'])]
     private ?string $name = null;
 
     #[ORM\ManyToOne(inversedBy: 'rounds')]
-    #[Groups(['roundEvent'])]
+    #[Groups(['roundEvent', 'sponsor:read'])]
     private ?Event $event = null;
 
     /**
@@ -40,11 +40,11 @@ class Round
     private Collection $pilotRoundCategories;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
-    #[Groups(['round'])]
+    #[Groups(['round', 'sponsor:read'])]
     private ?\DateTimeInterface $fromDate = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
-    #[Groups(['round'])]
+    #[Groups(['round', 'sponsor:read'])]
     private ?\DateTimeInterface $toDate = null;
 
     /**
@@ -88,6 +88,10 @@ class Round
      */
     #[ORM\OneToMany(targetEntity: Sponsorship::class, mappedBy: 'round')]
     private Collection $sponsorships;
+
+    #[ORM\ManyToOne(inversedBy: 'rounds')]
+    #[Groups(['roundCircuit'])]
+    private ?Circuit $circuit = null;
 
     public function __construct()
     {
@@ -419,6 +423,18 @@ class Round
                 $sponsorship->setRound(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getCircuit(): ?Circuit
+    {
+        return $this->circuit;
+    }
+
+    public function setCircuit(?Circuit $circuit): static
+    {
+        $this->circuit = $circuit;
 
         return $this;
     }
