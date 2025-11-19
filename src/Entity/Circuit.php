@@ -36,7 +36,11 @@ class Circuit
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(['circuit'])]
-    private ?string $text = null;
+    private ?string $shortDescription = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['circuit'])]
+    private ?string $description = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['circuit'])]
@@ -49,9 +53,17 @@ class Circuit
     #[Groups(['circuitRound'])]
     private Collection $rounds;
 
+    /**
+     * @var Collection<int, CircuitSpecification>
+     */
+    #[ORM\OneToMany(targetEntity: CircuitSpecification::class, mappedBy: 'circuit')]
+    #[Groups(['circuitCircuitSpecifications'])]
+    private Collection $circuitSpecifications;
+
     public function __construct()
     {
         $this->rounds = new ArrayCollection();
+        $this->circuitSpecifications = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -107,14 +119,26 @@ class Circuit
         return $this;
     }
 
-    public function getText(): ?string
+    public function getShortDescription(): ?string
     {
-        return $this->text;
+        return $this->shortDescription;
     }
 
-    public function setText(?string $text): static
+    public function setShortDescription(?string $shortDescription): static
     {
-        $this->text = $text;
+        $this->shortDescription = $shortDescription;
+
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): static
+    {
+        $this->description = $description;
 
         return $this;
     }
@@ -155,6 +179,36 @@ class Circuit
             // set the owning side to null (unless already changed)
             if ($round->getCircuit() === $this) {
                 $round->setCircuit(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CircuitSpecification>
+     */
+    public function getCircuitSpecifications(): Collection
+    {
+        return $this->circuitSpecifications;
+    }
+
+    public function addCircuitSpecification(CircuitSpecification $circuitSpecification): static
+    {
+        if (!$this->circuitSpecifications->contains($circuitSpecification)) {
+            $this->circuitSpecifications->add($circuitSpecification);
+            $circuitSpecification->setCircuit($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCircuitSpecification(CircuitSpecification $circuitSpecification): static
+    {
+        if ($this->circuitSpecifications->removeElement($circuitSpecification)) {
+            // set the owning side to null (unless already changed)
+            if ($circuitSpecification->getCircuit() === $this) {
+                $circuitSpecification->setCircuit(null);
             }
         }
 
