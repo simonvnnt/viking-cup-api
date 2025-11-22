@@ -60,10 +60,22 @@ class Circuit
     #[Groups(['circuitCircuitSpecifications'])]
     private Collection $circuitSpecifications;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['circuit'])]
+    private ?string $filePresPath = null;
+
+    /**
+     * @var Collection<int, CircuitPicto>
+     */
+    #[ORM\OneToMany(targetEntity: CircuitPicto::class, mappedBy: 'circuit')]
+    #[Groups(['circuitCircuitPictos'])]
+    private Collection $circuitPictos;
+
     public function __construct()
     {
         $this->rounds = new ArrayCollection();
         $this->circuitSpecifications = new ArrayCollection();
+        $this->circuitPictos = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -209,6 +221,48 @@ class Circuit
             // set the owning side to null (unless already changed)
             if ($circuitSpecification->getCircuit() === $this) {
                 $circuitSpecification->setCircuit(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getFilePresPath(): ?string
+    {
+        return $this->filePresPath;
+    }
+
+    public function setFilePresPath(?string $filePresPath): static
+    {
+        $this->filePresPath = $filePresPath;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CircuitPicto>
+     */
+    public function getCircuitPictos(): Collection
+    {
+        return $this->circuitPictos;
+    }
+
+    public function addCircuitPicto(CircuitPicto $circuitPicto): static
+    {
+        if (!$this->circuitPictos->contains($circuitPicto)) {
+            $this->circuitPictos->add($circuitPicto);
+            $circuitPicto->setCircuit($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCircuitPicto(CircuitPicto $circuitPicto): static
+    {
+        if ($this->circuitPictos->removeElement($circuitPicto)) {
+            // set the owning side to null (unless already changed)
+            if ($circuitPicto->getCircuit() === $this) {
+                $circuitPicto->setCircuit(null);
             }
         }
 
