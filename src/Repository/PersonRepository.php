@@ -220,9 +220,14 @@ class PersonRepository extends ServiceEntityRepository
             $qb->andWhere('pe.pilotNumber = :number')
                 ->setParameter('number', $number);
         }
-        if ($roundId !== null || $categoryId !== null) {
+        if ($eventId !== null || $roundId !== null || $categoryId !== null) {
             $qb->innerJoin('pi.pilotRoundCategories', 'prc');
 
+            if ($eventId !== null) {
+                $qb->innerJoin('prc.round', 'r')
+                    ->andWhere('r.event = :eventId')
+                    ->setParameter('eventId', $eventId);
+            }
             if ($roundId !== null) {
                 $qb->andWhere('prc.round = :roundId')
                     ->setParameter('roundId', $roundId);

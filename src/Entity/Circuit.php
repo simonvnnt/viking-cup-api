@@ -36,7 +36,11 @@ class Circuit
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(['circuit'])]
-    private ?string $text = null;
+    private ?string $shortDescription = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['circuit'])]
+    private ?string $description = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['circuit'])]
@@ -49,9 +53,29 @@ class Circuit
     #[Groups(['circuitRound'])]
     private Collection $rounds;
 
+    /**
+     * @var Collection<int, CircuitSpecification>
+     */
+    #[ORM\OneToMany(targetEntity: CircuitSpecification::class, mappedBy: 'circuit')]
+    #[Groups(['circuitCircuitSpecifications'])]
+    private Collection $circuitSpecifications;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['circuit'])]
+    private ?string $filePresPath = null;
+
+    /**
+     * @var Collection<int, CircuitPicto>
+     */
+    #[ORM\OneToMany(targetEntity: CircuitPicto::class, mappedBy: 'circuit')]
+    #[Groups(['circuitCircuitPictos'])]
+    private Collection $circuitPictos;
+
     public function __construct()
     {
         $this->rounds = new ArrayCollection();
+        $this->circuitSpecifications = new ArrayCollection();
+        $this->circuitPictos = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -107,14 +131,26 @@ class Circuit
         return $this;
     }
 
-    public function getText(): ?string
+    public function getShortDescription(): ?string
     {
-        return $this->text;
+        return $this->shortDescription;
     }
 
-    public function setText(?string $text): static
+    public function setShortDescription(?string $shortDescription): static
     {
-        $this->text = $text;
+        $this->shortDescription = $shortDescription;
+
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): static
+    {
+        $this->description = $description;
 
         return $this;
     }
@@ -155,6 +191,78 @@ class Circuit
             // set the owning side to null (unless already changed)
             if ($round->getCircuit() === $this) {
                 $round->setCircuit(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CircuitSpecification>
+     */
+    public function getCircuitSpecifications(): Collection
+    {
+        return $this->circuitSpecifications;
+    }
+
+    public function addCircuitSpecification(CircuitSpecification $circuitSpecification): static
+    {
+        if (!$this->circuitSpecifications->contains($circuitSpecification)) {
+            $this->circuitSpecifications->add($circuitSpecification);
+            $circuitSpecification->setCircuit($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCircuitSpecification(CircuitSpecification $circuitSpecification): static
+    {
+        if ($this->circuitSpecifications->removeElement($circuitSpecification)) {
+            // set the owning side to null (unless already changed)
+            if ($circuitSpecification->getCircuit() === $this) {
+                $circuitSpecification->setCircuit(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getFilePresPath(): ?string
+    {
+        return $this->filePresPath;
+    }
+
+    public function setFilePresPath(?string $filePresPath): static
+    {
+        $this->filePresPath = $filePresPath;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CircuitPicto>
+     */
+    public function getCircuitPictos(): Collection
+    {
+        return $this->circuitPictos;
+    }
+
+    public function addCircuitPicto(CircuitPicto $circuitPicto): static
+    {
+        if (!$this->circuitPictos->contains($circuitPicto)) {
+            $this->circuitPictos->add($circuitPicto);
+            $circuitPicto->setCircuit($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCircuitPicto(CircuitPicto $circuitPicto): static
+    {
+        if ($this->circuitPictos->removeElement($circuitPicto)) {
+            // set the owning side to null (unless already changed)
+            if ($circuitPicto->getCircuit() === $this) {
+                $circuitPicto->setCircuit(null);
             }
         }
 
