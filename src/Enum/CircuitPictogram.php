@@ -8,4 +8,5 @@ enum CircuitPictogram: string
     case PICNIC = "picnic";
     case TOILETS = "toilets";
     case ALCOHOL = "alcohol";
+    case PRM = "prm";
 }
