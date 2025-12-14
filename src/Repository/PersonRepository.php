@@ -46,6 +46,17 @@ class PersonRepository extends ServiceEntityRepository
         return $qb->getQuery()->getOneOrNullResult();
     }
 
+    /**
+     * @return array<Person>
+     */
+    public function findPilotsPersons(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->innerJoin('p.pilot', 'pi')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findPersonsPaginated(
         ?string $sort = null,
         ?string $order = null,
