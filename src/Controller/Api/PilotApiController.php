@@ -6,6 +6,7 @@ use App\Business\PilotBusiness;
 use App\Dto\CreatePilotDto;
 use App\Dto\PilotDto;
 use App\Entity\Pilot;
+use App\Helper\FileHelper;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -54,6 +55,46 @@ class PilotApiController extends AbstractController
         );
 
         return $this->json($pilots, Response::HTTP_OK, [], ['groups' => ['pilot', 'pilotPilotRoundCategories', 'pilotRoundCategory', 'pilotRoundCategoryRound', 'pilotRoundCategoryCategory', 'category', 'personPilot', 'person', 'personRounds', 'round', 'roundEvent', 'event', 'pilotEvents', 'pilotEvent', 'pilotEventEvent', 'personRoundDetails', 'roundDetail', 'personLinks', 'link', 'linkLinkType', 'linkType']]);
+    }
+
+    #[Route('/export', name: 'export', methods: ['GET'])]
+    public function exportPilots(
+        PilotBusiness $pilotBusiness,
+        FileHelper $fileHelper,
+        #[MapQueryParameter] ?string $sort,
+        #[MapQueryParameter] ?string $order,
+        #[MapQueryParameter] ?string $name = null,
+        #[MapQueryParameter] ?string $email = null,
+        #[MapQueryParameter] ?string $phone = null,
+        #[MapQueryParameter] ?int    $eventId = null,
+        #[MapQueryParameter] ?int    $roundId = null,
+        #[MapQueryParameter] ?int    $categoryId = null,
+        #[MapQueryParameter] ?string $number = null,
+        #[MapQueryParameter] ?bool   $ffsaLicensee = null,
+        #[MapQueryParameter] ?string $ffsaNumber = null,
+        #[MapQueryParameter] ?string $nationality = null,
+        #[MapQueryParameter] ?bool   $receivedWindscreenBand = null,
+    ): Response
+    {
+        $pilots = $pilotBusiness->exportPilots(
+            $sort,
+            $order,
+            $name,
+            $email,
+            $phone,
+            $eventId,
+            $roundId,
+            $categoryId,
+            $number,
+            $ffsaLicensee,
+            $ffsaNumber,
+            $nationality,
+            $receivedWindscreenBand
+        );
+
+        $pilotsCsv = $fileHelper->csvEncode($pilots);
+
+        return new Response($pilotsCsv);
     }
 
     #[Route('', name: 'create', methods: ['POST'])]

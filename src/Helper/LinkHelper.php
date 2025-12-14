@@ -15,6 +15,17 @@ readonly class LinkHelper
     )
     {}
 
+    public function getPeronInstagramLink(Person $person): ?string
+    {
+        $instaLinks = $person->getLinks()->filter(fn($link) => $link->getLinkType()->getName() === 'Instagram');
+
+        if ($person->getLinks()->isEmpty() || $instaLinks->isEmpty()) {
+            return null;
+        }
+
+        return $instaLinks->first()->getUrl();
+    }
+
     public function upsertInstagramLink(Person $person, string $instagram): void
     {
         if ($person->getLinks()->isEmpty() || $person->getLinks()->filter(fn($link) => $link->getLinkType()->getName() === 'Instagram')->isEmpty()) {

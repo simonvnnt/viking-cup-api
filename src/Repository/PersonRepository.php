@@ -179,8 +179,8 @@ class PersonRepository extends ServiceEntityRepository
     }
 
     public function findFilteredPilotPersonIdsPaginated(
-        int     $page = 1,
-        int     $limit = 50,
+        ?int    $page = 1,
+        ?int    $limit = 50,
         ?string $sort = null,
         ?string $order = null,
         ?string $name = null,
@@ -290,9 +290,11 @@ class PersonRepository extends ServiceEntityRepository
         $countQb->select('COUNT(DISTINCT p.id)');
         $total = (int) $countQb->getQuery()->getSingleScalarResult();
 
-        // Récupération des résultats paginés
-        $qb->setFirstResult(($page - 1) * $limit)
-            ->setMaxResults($limit);
+        if ($page !== null && $limit !== null) {
+            // Récupération des résultats paginés
+            $qb->setFirstResult(($page - 1) * $limit)
+                ->setMaxResults($limit);
+        }
 
         return [
             'items' => array_column($qb->getQuery()->getResult(), 'id'),

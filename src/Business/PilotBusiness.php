@@ -3,6 +3,7 @@
 namespace App\Business;
 
 use App\Dto\CreatePilotDto;
+use App\Dto\Export\PilotExportDto;
 use App\Dto\PilotDto;
 use App\Dto\PilotPresenceDto;
 use App\Entity\Category;
@@ -12,11 +13,14 @@ use App\Entity\Person;
 use App\Entity\PilotEvent;
 use App\Entity\PilotRoundCategory;
 use App\Entity\Qualifying;
+use App\Helper\FileHelper;
 use App\Helper\LinkHelper;
 use App\Helper\PilotHelper;
 use App\Repository\CategoryRepository;
 use App\Repository\EventRepository;
 use App\Repository\PersonRepository;
+use App\Repository\PilotRepository;
+use App\Repository\PilotRoundCategoryRepository;
 use App\Repository\RoundRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
@@ -26,11 +30,13 @@ readonly class PilotBusiness
 {
     public function __construct(
         private PersonRepository       $personRepository,
+        private PilotRoundCategoryRepository $pilotRoundCategoryRepository,
         private EventRepository        $eventRepository,
         private RoundRepository        $roundRepository,
         private CategoryRepository     $categoryRepository,
         private LinkHelper             $linkHelper,
         private PilotHelper            $pilotHelper,
+        private FileHelper             $fileHelper,
         private SerializerInterface    $serializer,
         private EntityManagerInterface $em
     )
@@ -65,6 +71,51 @@ readonly class PilotBusiness
                 'itemsPerPage' => $limit
             ]
         ];
+    }
+
+    public function exportPilots(
+        ?string $sort = null,
+        ?string $order = null,
+        ?string $name = null,
+        ?string $email = null,
+        ?string $phone = null,
+        ?int    $eventId = null,
+        ?int    $roundId = null,
+        ?int    $categoryId = null,
+        ?string $number = null,
+        ?bool   $ffsaLicensee = null,
+        ?string $ffsaNumber = null,
+        ?string $nationality = null,
+        ?bool   $receivedWindscreenBand = null
+    ): array
+    {
+        $pilots = $this->pilotRoundCategoryRepository->findFilteredPilot($sort, $order, $name, $email, $phone, $eventId, $roundId, $categoryId, $number, $ffsaLicensee, $ffsaNumber, $nationality, $receivedWindscreenBand);
+
+        $exportPilots = [];
+        foreach ($pilots as $pilot) {
+            $pilotEvent = $pilot->getPilot()?->getPilotEvents()->filter(fn (PilotEvent $pe) => $pe->getEvent()->getId() === $pilot->getRound()->getEvent()->getId())->first();
+
+            $exportPilots[] = new PilotExportDto(
+                firstName: $pilot->getPilot()?->getPerson()?->getFirstName(),
+                lastName: $pilot->getPilot()?->getPerson()?->getLastName(),
+                email: $pilot->getPilot()?->getPerson()?->getEmail(),
+                phone: $pilot->getPilot()?->getPerson()?->getPhone(),
+                comment: $pilot->getPilot()?->getPerson()?->getComment(),
+                warnings: $pilot->getPilot()?->getPerson()?->getWarnings(),
+                instagram: $this->linkHelper->getPeronInstagramLink($pilot->getPilot()?->getPerson()),
+                nationality: $pilot->getPilot()?->getPerson()?->getNationality(),
+                round: $pilot->getRound()->getName(),
+                event: $pilot->getRound()->getEvent()->getName(),
+                category: $pilot->getCategory()->getName(),
+                vehicle: $pilot->getVehicle(),
+                ffsaLicensee: $pilot->getPilot()?->isFfsaLicensee(),
+                ffsaNumber: $pilot->getPilot()?->getFfsaNumber(),
+                number: $pilotEvent !== false ? $pilotEvent->getPilotNumber() : null,
+                receiveWindscreenBand: $pilotEvent !== false ? $pilotEvent->isReceiveWindscreenBand() : false,
+            );
+        }
+
+        return $exportPilots;
     }
 
     public function createPilot(CreatePilotDto $pilotDto): Pilot
