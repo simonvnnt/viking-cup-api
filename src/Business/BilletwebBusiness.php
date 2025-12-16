@@ -257,9 +257,9 @@ class BilletwebBusiness
 
     private function createTicketFromBilletwebDto(Event $event, BilletwebTicketDto $billetwebDto, string $ticketType): ?Ticket
     {
-        $ticket = $this->ticketRepository->find($billetwebDto->id);
+        $ticket = $this->ticketRepository->findBy(['externalId' => $billetwebDto->id]);
 
-        if ($ticket !== null) {
+        if (count($ticket) > 0) {
             return null;
         }
 
