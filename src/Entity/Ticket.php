@@ -34,9 +34,6 @@ class Ticket
     #[ORM\ManyToOne(inversedBy: 'tickets')]
     private ?Category $category = null;
 
-    #[ORM\ManyToOne(inversedBy: 'tickets')]
-    private ?Round $round = null;
-
     /**
      * @var Collection<int, RoundDetail>
      */
@@ -121,11 +118,18 @@ class Ticket
     #[ORM\ManyToMany(targetEntity: Visitor::class, inversedBy: 'tickets')]
     private Collection $visitors;
 
+    /**
+     * @var Collection<int, Round>
+     */
+    #[ORM\ManyToMany(targetEntity: Round::class, inversedBy: 'tickets')]
+    private Collection $rounds;
+
     public function __construct()
     {
         $this->roundDetails = new ArrayCollection();
         $this->pilotRoundCategory = new ArrayCollection();
         $this->visitors = new ArrayCollection();
+        $this->rounds = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -208,18 +212,6 @@ class Ticket
     public function setCategory(?Category $category): static
     {
         $this->category = $category;
-
-        return $this;
-    }
-
-    public function getRound(): ?Round
-    {
-        return $this->round;
-    }
-
-    public function setRound(?Round $round): static
-    {
-        $this->round = $round;
 
         return $this;
     }
@@ -556,6 +548,30 @@ class Ticket
     public function removeVisitor(Visitor $visitor): static
     {
         $this->visitors->removeElement($visitor);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Round>
+     */
+    public function getRounds(): Collection
+    {
+        return $this->rounds;
+    }
+
+    public function addRound(Round $round): static
+    {
+        if (!$this->rounds->contains($round)) {
+            $this->rounds->add($round);
+        }
+
+        return $this;
+    }
+
+    public function removeRound(Round $round): static
+    {
+        $this->rounds->removeElement($round);
 
         return $this;
     }

@@ -95,15 +95,15 @@ class Round
     #[ORM\OneToMany(targetEntity: Accounting::class, mappedBy: 'round')]
     private Collection $accountings;
 
-    /**
-     * @var Collection<int, Ticket>
-     */
-    #[ORM\OneToMany(targetEntity: Ticket::class, mappedBy: 'round')]
-    private Collection $tickets;
-
     #[ORM\ManyToOne(inversedBy: 'rounds')]
     #[Groups(['roundCircuit'])]
     private ?Circuit $circuit = null;
+
+    /**
+     * @var Collection<int, Ticket>
+     */
+    #[ORM\ManyToMany(targetEntity: Ticket::class, mappedBy: 'rounds')]
+    private Collection $tickets;
 
     public function __construct()
     {
@@ -470,6 +470,18 @@ class Round
         return $this;
     }
 
+    public function getCircuit(): ?Circuit
+    {
+        return $this->circuit;
+    }
+
+    public function setCircuit(?Circuit $circuit): static
+    {
+        $this->circuit = $circuit;
+
+        return $this;
+    }
+
     /**
      * @return Collection<int, Ticket>
      */
@@ -482,7 +494,7 @@ class Round
     {
         if (!$this->tickets->contains($ticket)) {
             $this->tickets->add($ticket);
-            $ticket->setRound($this);
+            $ticket->addRound($this);
         }
 
         return $this;
@@ -491,23 +503,8 @@ class Round
     public function removeTicket(Ticket $ticket): static
     {
         if ($this->tickets->removeElement($ticket)) {
-            // set the owning side to null (unless already changed)
-            if ($ticket->getRound() === $this) {
-                $ticket->setRound(null);
-            }
+            $ticket->removeRound($this);
         }
-
-        return $this;
-    }
-
-    public function getCircuit(): ?Circuit
-    {
-        return $this->circuit;
-    }
-
-    public function setCircuit(?Circuit $circuit): static
-    {
-        $this->circuit = $circuit;
 
         return $this;
     }
