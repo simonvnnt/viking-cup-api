@@ -153,9 +153,7 @@ class BilletwebBusiness
                     }
 
                     $this->em->flush();
-                } catch (\Throwable $e) {
-                    $t = $e->getMessage();
-                }
+                } catch (\Throwable $e) {}
             }
 
             $this->em->flush();
@@ -245,9 +243,7 @@ class BilletwebBusiness
                             ->addTicket($ticket);
                         $this->em->persist($visitor);
                     }
-                } catch (\Throwable $e) {
-                    $t = $e->getMessage();
-                }
+                } catch (\Throwable $e) {}
             }
 
 
