@@ -14,15 +14,15 @@ class Event
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['event'])]
+    #[Groups(['event', 'sponsor:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['event'])]
+    #[Groups(['event', 'sponsor:read'])]
     private ?string $name = null;
 
     #[ORM\Column]
-    #[Groups(['event'])]
+    #[Groups(['event', 'sponsor:read'])]
     private ?int $year = null;
 
     /**
@@ -51,6 +51,13 @@ class Event
     private Collection $sponsorships;
 
     /**
+     * @var Collection<int, Category>
+     */
+    #[ORM\ManyToMany(targetEntity: Category::class, inversedBy: 'events')]
+    #[Groups(['eventCategories'])]
+    private Collection $categories;
+
+    /**
      * @var Collection<int, Accounting>
      */
     #[ORM\OneToMany(targetEntity: Accounting::class, mappedBy: 'event')]
@@ -62,6 +69,7 @@ class Event
         $this->pilotEvents = new ArrayCollection();
         $this->pilotNumberCounters = new ArrayCollection();
         $this->sponsorships = new ArrayCollection();
+        $this->categories = new ArrayCollection();
         $this->accountings = new ArrayCollection();
     }
 
@@ -210,6 +218,30 @@ class Event
                 $sponsorship->setEvent(null);
             }
         }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Category>
+     */
+    public function getCategories(): Collection
+    {
+        return $this->categories;
+    }
+
+    public function addCategory(Category $category): static
+    {
+        if (!$this->categories->contains($category)) {
+            $this->categories->add($category);
+        }
+
+        return $this;
+    }
+
+    public function removeCategory(Category $category): static
+    {
+        $this->categories->removeElement($category);
 
         return $this;
     }

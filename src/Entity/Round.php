@@ -15,15 +15,15 @@ class Round
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['round'])]
+    #[Groups(['round', 'sponsor:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['round'])]
+    #[Groups(['round', 'sponsor:read'])]
     private ?string $name = null;
 
     #[ORM\ManyToOne(inversedBy: 'rounds')]
-    #[Groups(['roundEvent'])]
+    #[Groups(['roundEvent', 'sponsor:read'])]
     private ?Event $event = null;
 
     /**
@@ -40,11 +40,11 @@ class Round
     private Collection $pilotRoundCategories;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
-    #[Groups(['round'])]
+    #[Groups(['round', 'sponsor:read'])]
     private ?\DateTimeInterface $fromDate = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
-    #[Groups(['round'])]
+    #[Groups(['round', 'sponsor:read'])]
     private ?\DateTimeInterface $toDate = null;
 
     /**
@@ -84,12 +84,6 @@ class Round
     private Collection $rescuers;
 
     /**
-     * @var Collection<int, Visitor>
-     */
-    #[ORM\OneToMany(targetEntity: Visitor::class, mappedBy: 'round')]
-    private Collection $visitors;
-
-    /**
      * @var Collection<int, Sponsorship>
      */
     #[ORM\OneToMany(targetEntity: Sponsorship::class, mappedBy: 'round')]
@@ -107,6 +101,10 @@ class Round
     #[ORM\OneToMany(targetEntity: Ticket::class, mappedBy: 'round')]
     private Collection $tickets;
 
+    #[ORM\ManyToOne(inversedBy: 'rounds')]
+    #[Groups(['roundCircuit'])]
+    private ?Circuit $circuit = null;
+
     public function __construct()
     {
         $this->roundDetails = new ArrayCollection();
@@ -117,7 +115,6 @@ class Round
         $this->commissaires = new ArrayCollection();
         $this->volunteers = new ArrayCollection();
         $this->rescuers = new ArrayCollection();
-        $this->visitors = new ArrayCollection();
         $this->sponsorships = new ArrayCollection();
         $this->accountings = new ArrayCollection();
         $this->tickets = new ArrayCollection();
@@ -414,36 +411,6 @@ class Round
     }
 
     /**
-     * @return Collection<int, Visitor>
-     */
-    public function getVisitors(): Collection
-    {
-        return $this->visitors;
-    }
-
-    public function addVisitor(Visitor $visitor): static
-    {
-        if (!$this->visitors->contains($visitor)) {
-            $this->visitors->add($visitor);
-            $visitor->setRound($this);
-        }
-
-        return $this;
-    }
-
-    public function removeVisitor(Visitor $visitor): static
-    {
-        if ($this->visitors->removeElement($visitor)) {
-            // set the owning side to null (unless already changed)
-            if ($visitor->getRound() === $this) {
-                $visitor->setRound(null);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
      * @return Collection<int, Sponsorship>
      */
     public function getSponsorships(): Collection
@@ -529,6 +496,18 @@ class Round
                 $ticket->setRound(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getCircuit(): ?Circuit
+    {
+        return $this->circuit;
+    }
+
+    public function setCircuit(?Circuit $circuit): static
+    {
+        $this->circuit = $circuit;
 
         return $this;
     }
