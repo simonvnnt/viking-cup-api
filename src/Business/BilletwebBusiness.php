@@ -69,7 +69,7 @@ class BilletwebBusiness
         $pilotWildCardEventIds = explode(',', $pilotWildCardEventIds);
 
         foreach (array_merge($pilotEventIds, $pilotWildCardEventIds) as $pilotEventId) {
-            $seasonId = $this->eventsMapping['pilots'][$pilotEventId];
+            $seasonId = $this->eventsMapping['pilot'][$pilotEventId];
             $season = $this->eventRepository->find($seasonId);
 
             $isWildCard = in_array($pilotEventId, $pilotWildCardEventIds);
@@ -171,7 +171,7 @@ class BilletwebBusiness
         $companions = [];
 
         foreach ($visitorEventIds as $visitorEventId) {
-            $seasonId = $this->eventsMapping['visitors'][$visitorEventId];
+            $seasonId = $this->eventsMapping['visitor'][$visitorEventId];
             $season = $this->eventRepository->find($seasonId);
 
             $eventVisitorsData = $this->billetwebService->getEventAttendees($visitorEventId);

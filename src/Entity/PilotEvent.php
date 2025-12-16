@@ -33,7 +33,7 @@ class PilotEvent
     private ?bool $receiveWindscreenBand = null;
 
     #[ORM\Column]
-    private ?bool $wildCard = null;
+    private ?bool $wildCard = false;
 
     public function getId(): ?int
     {
