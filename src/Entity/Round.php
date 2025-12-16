@@ -99,6 +99,12 @@ class Round
     #[Groups(['roundCircuit'])]
     private ?Circuit $circuit = null;
 
+    /**
+     * @var Collection<int, Ticket>
+     */
+    #[ORM\ManyToMany(targetEntity: Ticket::class, mappedBy: 'rounds')]
+    private Collection $tickets;
+
     public function __construct()
     {
         $this->roundDetails = new ArrayCollection();
@@ -109,9 +115,9 @@ class Round
         $this->commissaires = new ArrayCollection();
         $this->volunteers = new ArrayCollection();
         $this->rescuers = new ArrayCollection();
-        $this->visitors = new ArrayCollection();
         $this->sponsorships = new ArrayCollection();
         $this->accountings = new ArrayCollection();
+        $this->tickets = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -472,6 +478,33 @@ class Round
     public function setCircuit(?Circuit $circuit): static
     {
         $this->circuit = $circuit;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Ticket>
+     */
+    public function getTickets(): Collection
+    {
+        return $this->tickets;
+    }
+
+    public function addTicket(Ticket $ticket): static
+    {
+        if (!$this->tickets->contains($ticket)) {
+            $this->tickets->add($ticket);
+            $ticket->addRound($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTicket(Ticket $ticket): static
+    {
+        if ($this->tickets->removeElement($ticket)) {
+            $ticket->removeRound($this);
+        }
 
         return $this;
     }

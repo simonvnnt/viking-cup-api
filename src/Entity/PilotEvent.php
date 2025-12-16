@@ -32,6 +32,9 @@ class PilotEvent
     #[Groups(['pilotEvent'])]
     private ?bool $receiveWindscreenBand = null;
 
+    #[ORM\Column]
+    private ?bool $wildCard = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -81,6 +84,18 @@ class PilotEvent
     public function setReceiveWindscreenBand(bool $receiveWindscreenBand): static
     {
         $this->receiveWindscreenBand = $receiveWindscreenBand;
+
+        return $this;
+    }
+
+    public function isWildCard(): ?bool
+    {
+        return $this->wildCard;
+    }
+
+    public function setWildCard(bool $wildCard): static
+    {
+        $this->wildCard = $wildCard;
 
         return $this;
     }

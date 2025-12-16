@@ -51,17 +51,17 @@ class Event
     private Collection $sponsorships;
 
     /**
-     * @var Collection<int, Accounting>
-     */
-    #[ORM\OneToMany(targetEntity: Accounting::class, mappedBy: 'event')]
-    private Collection $accountings;
-
-    /**
      * @var Collection<int, Category>
      */
     #[ORM\ManyToMany(targetEntity: Category::class, inversedBy: 'events')]
     #[Groups(['eventCategories'])]
     private Collection $categories;
+
+    /**
+     * @var Collection<int, Accounting>
+     */
+    #[ORM\OneToMany(targetEntity: Accounting::class, mappedBy: 'event')]
+    private Collection $accountings;
 
     public function __construct()
     {
@@ -69,8 +69,8 @@ class Event
         $this->pilotEvents = new ArrayCollection();
         $this->pilotNumberCounters = new ArrayCollection();
         $this->sponsorships = new ArrayCollection();
-        $this->accountings = new ArrayCollection();
         $this->categories = new ArrayCollection();
+        $this->accountings = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -223,6 +223,30 @@ class Event
     }
 
     /**
+     * @return Collection<int, Category>
+     */
+    public function getCategories(): Collection
+    {
+        return $this->categories;
+    }
+
+    public function addCategory(Category $category): static
+    {
+        if (!$this->categories->contains($category)) {
+            $this->categories->add($category);
+        }
+
+        return $this;
+    }
+
+    public function removeCategory(Category $category): static
+    {
+        $this->categories->removeElement($category);
+
+        return $this;
+    }
+
+    /**
      * @return Collection<int, Accounting>
      */
     public function getAccountings(): Collection
@@ -248,30 +272,6 @@ class Event
                 $accounting->setEvent(null);
             }
         }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, Category>
-     */
-    public function getCategories(): Collection
-    {
-        return $this->categories;
-    }
-
-    public function addCategory(Category $category): static
-    {
-        if (!$this->categories->contains($category)) {
-            $this->categories->add($category);
-        }
-
-        return $this;
-    }
-
-    public function removeCategory(Category $category): static
-    {
-        $this->categories->removeElement($category);
 
         return $this;
     }
