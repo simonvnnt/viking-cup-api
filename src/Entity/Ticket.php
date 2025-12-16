@@ -413,7 +413,7 @@ class Ticket
         return $this->pass;
     }
 
-    public function setPass(int $pass): static
+    public function setPass(?int $pass): static
     {
         $this->pass = $pass;
 
