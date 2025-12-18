@@ -26,8 +26,8 @@ readonly class CrmBusiness
         foreach ($pilotPersons as $pilotPerson) {
             $pilotListIds = [];
             foreach ($pilotPerson->getPilot()->getPilotRoundCategories() as $pilotRoundCategory) {
-                $pilotListIds[] = $this->brevoLists['pilots']['season'][$pilotRoundCategory->getRound()->getEvent()->getId()] ?? null;
-                $pilotListIds[] = $this->brevoLists['pilots']['round'][$pilotRoundCategory->getRound()->getEvent()->getId()][$pilotRoundCategory->getRound()->getId()] ?? null;
+                $pilotListIds[] = $this->brevoLists['pilots']['season'][$pilotRoundCategory->getRound()->getEvent()->getId()][$pilotRoundCategory->getCategory()->getId()] ?? null;
+                $pilotListIds[] = $this->brevoLists['pilots']['round'][$pilotRoundCategory->getRound()->getEvent()->getId()][$pilotRoundCategory->getRound()->getId()][$pilotRoundCategory->getCategory()->getId()] ?? null;
             }
 
             $this->brevoService->createOrUpdateContact(
