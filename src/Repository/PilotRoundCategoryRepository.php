@@ -19,19 +19,6 @@ class PilotRoundCategoryRepository extends ServiceEntityRepository
         parent::__construct($registry, PilotRoundCategory::class);
     }
 
-    public function findWithCorrectPilotEvent(PilotRoundCategory $pilotRoundCategory): ?PilotRoundCategory
-    {
-        $qb = $this->createQueryBuilder('prc')
-            ->select('prc, p, pe')
-            ->innerJoin('prc.pilot', 'p')
-            ->leftJoin('p.pilotEvents', 'pe', 'WITH', 'pe.event = :event')
-            ->andWhere('prc = :pilotRoundCategory')
-            ->setParameter('pilotRoundCategory', $pilotRoundCategory)
-            ->setParameter('event', $pilotRoundCategory->getRound()->getEvent());
-
-        return $qb->getQuery()->getOneOrNullResult();
-    }
-
     public function findByRoundCategoryQuery(
         Round $round,
         Category $category,
@@ -43,10 +30,9 @@ class PilotRoundCategoryRepository extends ServiceEntityRepository
         $order = $order ?? 'ASC';
 
         $qb = $this->createQueryBuilder('prc')
-            ->select('prc, p, pe')
+            ->select('prc, p')
             ->innerJoin('prc.pilot', 'p')
             ->innerJoin('p.person', 'person')
-            ->leftJoin('p.pilotEvents', 'pe', 'WITH', 'pe.event = :event')
             ->andWhere('prc.round = :round')
             ->andWhere('prc.category = :category')
             ->setParameter('round', $round)
@@ -54,14 +40,14 @@ class PilotRoundCategoryRepository extends ServiceEntityRepository
             ->setParameter('event', $round->getEvent());
 
         if ($search !== null) {
-            $qb->andWhere('pe.event = :event')
+            $qb->andWhere('p.event = :event')
                 ->andWhere('
                     person.firstName LIKE :pilot OR
                     person.lastName LIKE :pilot OR
                     CONCAT(person.firstName, \' \', person.lastName) LIKE :pilot OR
                     CONCAT(person.lastName, \' \', person.firstName) LIKE :pilot OR
                     person.email LIKE :pilot OR
-                    pe.pilotNumber LIKE :pilot
+                    p.pilotNumber LIKE :pilot
                 ')
                 ->setParameter('event', $round->getEvent())
                 ->setParameter('pilot', "%$search%");
@@ -75,10 +61,10 @@ class PilotRoundCategoryRepository extends ServiceEntityRepository
                 $qb->addOrderBy('prc.isCompeting', $order);
                 break;
             case 'pilotNumber':
-                $qb->addOrderBy('pe.pilotNumber', $order);
+                $qb->addOrderBy('p.pilotNumber', $order);
                 break;
             default:
-                $qb->addOrderBy('pe.pilotNumber', $order);
+                $qb->addOrderBy('p.pilotNumber', $order);
         }
 
         return $qb->getQuery();

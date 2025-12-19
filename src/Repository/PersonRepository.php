@@ -211,9 +211,7 @@ class PersonRepository extends ServiceEntityRepository
 
         $qb = $this->createQueryBuilder('p')
             ->select('DISTINCT p.id')
-            ->innerJoin('p.pilot', 'pi')
-            ->leftJoin('pi.pilotEvents', 'pe', 'WITH', 'pe.event = :event')
-            ->setParameter('event', $eventId);
+            ->innerJoin('p.pilots', 'pi');
 
         if ($name !== null) {
             $qb->andWhere('p.firstName LIKE :name OR p.lastName LIKE :name')
@@ -227,11 +225,19 @@ class PersonRepository extends ServiceEntityRepository
             $qb->andWhere('p.phone LIKE :phone')
                 ->setParameter('phone', '%' . $phone . '%');
         }
-        if ($eventId !== null && $number !== null) {
-            $qb->andWhere('pe.pilotNumber = :number')
+        if ($eventId !== null) {
+            $qb->andWhere('pi.event = :eventId')
+                ->setParameter('eventId', $eventId);
+        }
+        if ($receivedWindscreenBand !== null) {
+            $qb->andWhere('pi.receiveWindscreenBand = :receivedWindscreenBand')
+                ->setParameter('receivedWindscreenBand', $receivedWindscreenBand);
+        }
+        if ($number !== null) {
+            $qb->andWhere('pi.pilotNumber = :number')
                 ->setParameter('number', $number);
         }
-        if ($eventId !== null || $roundId !== null || $categoryId !== null) {
+        if ($roundId !== null || $categoryId !== null) {
             $qb->innerJoin('pi.pilotRoundCategories', 'prc');
 
             if ($eventId !== null) {
@@ -260,10 +266,6 @@ class PersonRepository extends ServiceEntityRepository
             $qb->andWhere('LOWER(p.nationality) LIKE :nationality')
                 ->setParameter('nationality', '%' . $this->normalizeName($nationality) . '%');
         }
-        if ($eventId !== null && $receivedWindscreenBand !== null) {
-            $qb->andWhere('pe.receiveWindscreenBand = :receivedWindscreenBand')
-                ->setParameter('receivedWindscreenBand', $receivedWindscreenBand);
-        }
 
 
         switch ($sort) {
@@ -280,7 +282,7 @@ class PersonRepository extends ServiceEntityRepository
                 $qb->orderBy('p.email', $order);
                 break;
             case 'number':
-                $qb->orderBy('pe.pilotNumber', $order);
+                $qb->orderBy('pi.pilotNumber', $order);
                 break;
             case 'ffsaLicensee':
                 $qb->orderBy('pi.ffsaLicensee', $order);
@@ -292,7 +294,7 @@ class PersonRepository extends ServiceEntityRepository
                 $qb->orderBy('p.nationality', $order);
                 break;
             case 'receivedWindscreenBand':
-                $qb->orderBy('pe.receiveWindscreenBand', $order);
+                $qb->orderBy('pi.receiveWindscreenBand', $order);
                 break;
         }
 

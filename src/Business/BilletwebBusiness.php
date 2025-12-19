@@ -8,7 +8,6 @@ use App\Entity\Ticket;
 use App\Entity\Category;
 use App\Entity\Person;
 use App\Entity\Pilot;
-use App\Entity\PilotEvent;
 use App\Entity\PilotRoundCategory;
 use App\Entity\Qualifying;
 use App\Entity\Round;
@@ -19,7 +18,6 @@ use App\Helper\PilotHelper;
 use App\Repository\TicketRepository;
 use App\Repository\EventRepository;
 use App\Repository\PersonRepository;
-use App\Repository\PilotEventRepository;
 use App\Repository\PilotRoundCategoryRepository;
 use App\Repository\QualifyingRepository;
 use App\Repository\RoundRepository;
@@ -43,7 +41,6 @@ class BilletwebBusiness
         private readonly RoundRepository              $roundRepository,
         private readonly PersonRepository             $personRepository,
         private readonly PilotRoundCategoryRepository $pilotRoundCategoryRepository,
-        private readonly PilotEventRepository         $pilotEventRepository,
         private readonly QualifyingRepository         $qualifyingRepository,
         private readonly BilletwebService             $billetwebService,
         private readonly ConfigHelper                 $configHelper,
@@ -115,34 +112,26 @@ class BilletwebBusiness
                     $this->em->persist($person);
 
                     // Create Pilot Entity
-                    $pilot = $person->getPilot();
-                    if ($pilot === null) {
+                    $pilot = $person->getPilots()->filter(fn(Pilot $pilot) => $pilot->getEvent()->getId() === $season->getId())->first();
+                    if ($pilot === false) {
                         $pilot = new Pilot();
-                        $pilot->setPerson($person)
+                        $pilot->setEvent($season)
+                            ->setPerson($person)
+                            ->setWildCard($isWildCard)
                             ->setFfsaNumber($eventTicket->custom['Numéro de licence FFSA'] ?? null)
-                            ->setFfsaLicensee(boolval($eventTicket->custom['Etes-vous licencié FFSA ?'] ?? null));
+                            ->setFfsaLicensee(boolval($eventTicket->custom['Etes-vous licencié FFSA ?'] ?? null))
+                            ->setReceiveWindscreenBand(false);
 
                         if ($pilot->getCreatedAt() === null && $ticket->getCreationDate() !== null) {
                             $pilot->setCreatedAt($ticket->getCreationDate());
                         }
 
+                        $pilotNumber = $this->pilotHelper->getPilotNumber($season, $ticket->getCategory());
+                        $pilot->setPilotNumber($pilotNumber);
+
                         $this->em->persist($pilot);
 
                         echo 'Nouveau pilote : ' . $ticket->getFirstName() . ' ' . $ticket->getLastName() . PHP_EOL;
-                    }
-
-                    $pilotEvent = $this->pilotEventRepository->findOneBy(['pilot' => $pilot, 'event' => $season]);
-                    if ($pilotEvent === null) {
-                        $pilotEvent = new PilotEvent();
-                        $pilotEvent->setPilot($pilot)
-                            ->setEvent($season)
-                            ->setWildCard($isWildCard)
-                            ->setReceiveWindscreenBand(false);
-
-                        $pilotNumber = $this->pilotHelper->getPilotNumber($season, $ticket->getCategory());
-                        $pilotEvent->setPilotNumber($pilotNumber);
-
-                        $this->em->persist($pilotEvent);
                     }
 
                     // Create PilotRoundCategory Entity
