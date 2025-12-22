@@ -35,6 +35,7 @@ readonly class CrmBusiness
                 [
                     'PRENOM' => $pilotPerson->getFirstName(),
                     'NOM' => $pilotPerson->getLastName(),
+                    'SMS' => $pilotPerson->getPhone(),
                     'EXT_ID' => $pilotPerson->getUniqueId(),
                 ],
                 array_values(array_unique($pilotListIds))
