@@ -5,15 +5,12 @@ namespace App\Business;
 use App\Dto\CreatePilotDto;
 use App\Dto\PilotDto;
 use App\Dto\PilotPresenceDto;
-use App\Entity\Category;
-use App\Entity\Event;
 use App\Entity\Pilot;
 use App\Entity\Person;
-use App\Entity\PilotEvent;
 use App\Entity\PilotRoundCategory;
 use App\Entity\Qualifying;
 use App\Helper\LinkHelper;
-use App\Helper\DriverHelper;
+use App\Helper\PilotHelper;
 use App\Repository\CategoryRepository;
 use App\Repository\EventRepository;
 use App\Repository\PersonRepository;
@@ -30,7 +27,7 @@ readonly class PilotBusiness
         private RoundRepository        $roundRepository,
         private CategoryRepository     $categoryRepository,
         private LinkHelper             $linkHelper,
-        private DriverHelper           $pilotHelper,
+        private PilotHelper            $pilotHelper,
         private SerializerInterface    $serializer,
         private EntityManagerInterface $em
     )
@@ -74,46 +71,35 @@ readonly class PilotBusiness
             throw new Exception('Person not found');
         }
 
-        // get pilot or create new one
-        $pilot = $person->getPilot();
-        if ($pilot === null) {
+        $event = $this->eventRepository->find($pilotDto->eventId);
+        if ($pilotDto->eventId === null || $event === null) {
+            throw new Exception('Event not found');
+        }
+
+        // create pilot
+        $pilot = $person->getPilots()->filter(fn(Pilot $p) => $p->getEvent()->getId() === $pilotDto->eventId)->first();
+        if ($pilot === false) {
             $pilot = new Pilot();
-            $pilot->setPerson($person);
+            $pilot->setPerson($person)
+                ->setEvent($event);
+        }
+
+        $pilotRoundCategories = $pilot->getPilotRoundCategories()->first();
+        if ($pilotRoundCategories !== false) {
+            $category = $pilotRoundCategories->getCategory();
+            $pilotNumber = $this->pilotHelper->getPilotNumber($event, $category ?? null, $pilotDto->pilotNumber);
         }
 
         $pilot->setFfsaLicensee($pilotDto->ffsaLicensee)
-            ->setFfsaNumber($pilotDto->ffsaNumber);
+            ->setFfsaNumber($pilotDto->ffsaNumber)
+            ->setReceiveWindscreenBand($pilotDto->receiveWindscreenBand)
+            ->setPilotNumber($pilotNumber ?? null);
 
+        // update pilot presence
         $participations = $this->serializer->denormalize($pilotDto->participations, PilotPresenceDto::class . '[]');
         $this->updatePilotPresence($pilot, $participations);
 
         $this->em->persist($pilot);
-
-        // create pilot event
-        if (!empty($pilotDto->eventId)) {
-            $event = $this->eventRepository->find($pilotDto->eventId);
-            $pilotEvent = $pilot->getPilotEvents()->filter(fn($pe) => $pe->getEvent()->getId() === $pilotDto->eventId)->first();
-            if ($pilotEvent === false) {
-                if ($event) {
-                    $pilotEvent = new PilotEvent();
-                    $pilotEvent->setPilot($pilot)
-                        ->setEvent($event);
-                }
-            }
-            if ($pilotEvent !== false) {
-                $pilotRoundCategories = $pilot->getPilotRoundCategories()->first();
-                if ($pilotRoundCategories !== false) {
-                    $category = $pilotRoundCategories->getCategory();
-                    $pilotNumber = $this->pilotHelper->getDriverNumber($event, $category ?? null, $pilotDto->number);
-                }
-
-                $pilotEvent->setPilotNumber($pilotNumber ?? null)
-                    ->setReceiveWindscreenBand($pilotDto->receiveWindscreenBand);
-
-                $this->em->persist($pilotEvent);
-            }
-        }
-
         $this->em->flush();
 
         return $pilot;
@@ -146,7 +132,7 @@ readonly class PilotBusiness
             $this->em->persist($person);
         }
 
-        // remove rounds and round details that are not in the presence array
+        // remove rounds that are not in the presence array
         $personRounds = $person->getRounds();
         foreach ($personRounds->toArray() as $round) {
             if (!in_array($round->getId(), $roundIds)) {
@@ -214,12 +200,9 @@ readonly class PilotBusiness
         }
     }
 
-    public function updatePersonPilot(Pilot $pilot, PilotDto $pilotDto): void
+    public function updatePersonPilot(Person $person, PilotDto $pilotDto): void
     {
         // update person
-        $person = $pilot->getPerson();
-        $pilotPresence = $this->serializer->denormalize($pilotDto->presence, PilotPresenceDto::class . '[]');
-
         $person->setFirstName($pilotDto->firstName)
             ->setLastName($pilotDto->lastName)
             ->setEmail($pilotDto->email)
@@ -230,45 +213,48 @@ readonly class PilotBusiness
 
         $this->em->persist($person);
 
+        // update person presence
+        $pilotPresence = $this->serializer->denormalize($pilotDto->presence, PilotPresenceDto::class . '[]');
         $this->updatePersonPresence($person, $pilotPresence);
 
+        // update links
         if (!empty($pilotDto->instagram)) {
             $this->linkHelper->upsertInstagramLink($person, $pilotDto->instagram);
         }
 
         // update pilot
-        $pilot->setFfsaLicensee($pilotDto->ffsaLicensee)
-            ->setFfsaNumber($pilotDto->ffsaNumber);
-
-        $this->em->persist($pilot);
-
-        $this->updatePilotPresence($pilot, $pilotPresence);
-
-        // update pilot event
         if (!empty($pilotDto->eventId)) {
-            $pilotEvent = $pilot->getPilotEvents()->filter(fn($pe) => $pe->getEvent()->getId() === $pilotDto->eventId)->first();
-            if ($pilotEvent === false) {
+            $pilot = $person->getPilots()->filter(fn(Pilot $p) => $p->getEvent()->getId() === $pilotDto->eventId)->first();
+            if ($pilot === false) {
                 $event = $this->eventRepository->find($pilotDto->eventId);
-                if ($event) {
-                    $pilotEvent = new PilotEvent();
-                    $pilotEvent->setPilot($pilot)
-                        ->setEvent($event);
+                if ($event === null) {
+                    throw new Exception('Event not found');
                 }
-            }
-            if ($pilotEvent !== false) {
-                $pilotEvent->setPilotNumber($pilotDto->number)
-                    ->setReceiveWindscreenBand($pilotDto->receiveWindscreenBand);
 
-                $this->em->persist($pilotEvent);
+                $pilot = new Pilot();
+                $pilot->setPerson($person)
+                    ->setEvent($event);
+
             }
+
+            $pilot->setFfsaLicensee($pilotDto->ffsaLicensee)
+                ->setFfsaNumber($pilotDto->ffsaNumber)
+                ->setPilotNumber($pilotDto->pilotNumber)
+                ->setReceiveWindscreenBand($pilotDto->receiveWindscreenBand);
+
+            $this->updatePilotPresence($pilot, $pilotPresence);
+
+            $this->em->persist($pilot);
         }
 
         $this->em->flush();
     }
 
-    public function deletePilot(Pilot $pilot): void
+    public function deletePersonPilot(Person $person): void
     {
-        $this->em->remove($pilot);
+        foreach ($person->getPilots() as $pilot) {
+            $this->em->remove($pilot);
+        }
         $this->em->flush();
     }
 }
