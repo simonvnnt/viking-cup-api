@@ -36,8 +36,7 @@ class PilotRoundCategoryRepository extends ServiceEntityRepository
             ->andWhere('prc.round = :round')
             ->andWhere('prc.category = :category')
             ->setParameter('round', $round)
-            ->setParameter('category', $category)
-            ->setParameter('event', $round->getEvent());
+            ->setParameter('category', $category);
 
         if ($search !== null) {
             $qb->andWhere('p.event = :event')
