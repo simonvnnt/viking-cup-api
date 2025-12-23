@@ -5,6 +5,7 @@ namespace App\Business;
 use App\Helper\ConfigHelper;
 use App\Repository\PersonRepository;
 use App\Service\BrevoService;
+use Psr\Log\LoggerInterface;
 
 readonly class CrmBusiness
 {
@@ -13,7 +14,8 @@ readonly class CrmBusiness
     public function __construct(
         private PersonRepository $personRepository,
         private BrevoService $brevoService,
-        private ConfigHelper $configHelper
+        private ConfigHelper $configHelper,
+        private LoggerInterface $logger
     )
     {
         $this->brevoLists = json_decode($this->configHelper->getValue('BREVO_LISTS_MAPPING'), true);
@@ -24,23 +26,33 @@ readonly class CrmBusiness
         $pilotPersons = $this->personRepository->findPilotsPersons();
 
         foreach ($pilotPersons as $pilotPerson) {
-            $pilotListIds = [];
-            foreach ($pilotPerson->getPilots() as $pilot) {
-                foreach ($pilot->getPilotRoundCategories() as $pilotRoundCategory) {
-                    $pilotListIds[] = $this->brevoLists['pilots']['season'][$pilot->getEvent()->getId()][$pilotRoundCategory->getCategory()->getId()] ?? null;
-                    $pilotListIds[] = $this->brevoLists['pilots']['round'][$pilot->getEvent()->getId()][$pilotRoundCategory->getRound()->getId()] ?? null;
+            try {
+                $pilotListIds = [];
+                foreach ($pilotPerson->getPilots() as $pilot) {
+                    foreach ($pilot->getPilotRoundCategories() as $pilotRoundCategory) {
+                        $pilotListIds[] = $this->brevoLists['pilots']['season'][$pilot->getEvent()->getId()][$pilotRoundCategory->getCategory()->getId()] ?? null;
+                        $pilotListIds[] = $this->brevoLists['pilots']['round'][$pilot->getEvent()->getId()][$pilotRoundCategory->getRound()->getId()][$pilotRoundCategory->getCategory()->getId()] ?? null;
+                    }
                 }
-            }
-
-            $this->brevoService->createOrUpdateContact(
-                $pilotPerson->getEmail(),
-                [
+                $attributes = [
                     'PRENOM' => $pilotPerson->getFirstName(),
                     'NOM' => $pilotPerson->getLastName(),
                     'EXT_ID' => $pilotPerson->getUniqueId(),
-                ],
-                array_values(array_unique($pilotListIds))
-            );
+                ];
+                if (!empty($pilotPerson->getPhone())) {
+                    $attributes['SMS'] = $pilotPerson->getPhone();
+                }
+                $this->brevoService->createOrUpdateContact(
+                    $pilotPerson->getEmail(),
+                    $attributes,
+                    array_values(array_unique($pilotListIds))
+                );
+            } catch (\Exception $e) {
+                $this->logger->error('Error syncing pilot to Brevo: ' . $e->getMessage(), [
+                    'person_id' => $pilotPerson->getId(),
+                    'email' => $pilotPerson->getEmail(),
+                ]);
+            }
         }
     }
 }
