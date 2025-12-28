@@ -227,7 +227,6 @@ readonly class BattleBusiness
             // On mappe pour enrichir avec les infos utiles à l’affichage
             $battlesRanking = array_map(fn($battle, $index) => [
                 'pilot' => isset($battle[0]) ? $battle[0]->getPilot() : null,
-                'pilotEvent' => isset($battle[0]) ? $battle[0]->getPilot()->getPilotEvents()->filter(fn($pe) => $pe->getEvent()->getId() === $round->getEvent()->getId())->first() : null,
                 'round' => $round,
                 'category' => $category,
                 'position' => $index + 1
@@ -331,7 +330,6 @@ readonly class BattleBusiness
 
                 $ranking[] = [
                     'pilot' => $pilotRoundCategory->getPilot(),
-                    'pilotEvent' => $pilotRoundCategory->getPilot()->getPilotEvents()->filter(fn($pe) => $pe->getEvent()->getId() === $pilotRoundCategory->getRound()->getEvent()->getId())->first(),
                     'round' => $pilotRoundCategory->getRound(),
                     'category' => $pilotRoundCategory->getCategory(),
                     'points' => $pilotOverride['points'],

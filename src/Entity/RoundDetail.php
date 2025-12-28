@@ -38,10 +38,17 @@ class RoundDetail
     #[ORM\OneToMany(targetEntity: Visitor::class, mappedBy: 'roundDetail')]
     private Collection $visitors;
 
+    /**
+     * @var Collection<int, Ticket>
+     */
+    #[ORM\ManyToMany(targetEntity: Ticket::class, mappedBy: 'roundDetails')]
+    private Collection $tickets;
+
     public function __construct()
     {
         $this->people = new ArrayCollection();
         $this->visitors = new ArrayCollection();
+        $this->tickets = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -125,6 +132,33 @@ class RoundDetail
             if ($visitor->getRoundDetail() === $this) {
                 $visitor->setRoundDetail(null);
             }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Ticket>
+     */
+    public function getTickets(): Collection
+    {
+        return $this->tickets;
+    }
+
+    public function addTicket(Ticket $ticket): static
+    {
+        if (!$this->tickets->contains($ticket)) {
+            $this->tickets->add($ticket);
+            $ticket->addRoundDetail($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTicket(Ticket $ticket): static
+    {
+        if ($this->tickets->removeElement($ticket)) {
+            $ticket->removeRoundDetail($this);
         }
 
         return $this;

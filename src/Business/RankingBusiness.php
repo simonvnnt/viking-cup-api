@@ -53,7 +53,6 @@ readonly class RankingBusiness
                 if (!isset($eventRanking[$pilot->getId()])) {
                     $eventRanking[$pilot->getId()] = [
                         'pilot' => $pilot,
-                        'pilotEvent' => $entry['pilotEvent'] ?? null,
                         'round' => $round,
                         'category' => $category,
                         'points' => 0,

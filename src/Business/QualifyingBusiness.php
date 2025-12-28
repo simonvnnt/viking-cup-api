@@ -28,7 +28,7 @@ readonly class QualifyingBusiness
     public function getPilotRoundCategoryPilotQualifying(PilotRoundCategory $pilotRoundCategory): array
     {
         return [
-            'pilotRoundCategory' => $this->pilotRoundCategoryRepository->findWithCorrectPilotEvent($pilotRoundCategory),
+            'pilotRoundCategory' => $pilotRoundCategory,
             'pilotQualifyings' => $pilotRoundCategory->getQualifyings()
         ];
     }
@@ -75,11 +75,8 @@ readonly class QualifyingBusiness
                     }
                 }
 
-                $pilotEvent = $pilotRoundCategory->getPilot()->getPilotEvents()->filter(fn($pe) => $pe->getEvent()->getId() === $round->getEvent()->getId())->first();
-
                 $ranking[] = [
                     'pilot' => $pilotRoundCategory->getPilot(),
-                    'pilotEvent' => !$pilotEvent ? null : $pilotEvent,
                     'round' => $round,
                     'category' => $category,
                     'passagePoints' => $passagePoints,
@@ -242,11 +239,8 @@ readonly class QualifyingBusiness
                 }
                 $pilotOverride = $overrideRanking[$pilotOverrideIndex];
 
-                $pilotEvent = $pilotRoundCategory->getPilot()->getPilotEvents()->filter(fn($pe) => $pe->getEvent()->getId() === $pilotRoundCategory->getRound()->getEvent()->getId())->first();
-
                 $ranking[] = [
                     'pilot' => $pilotRoundCategory->getPilot(),
-                    'pilotEvent' => !$pilotEvent ? null : $pilotEvent,
                     'round' => $pilotRoundCategory->getRound(),
                     'category' => $pilotRoundCategory->getCategory(),
                     'points' => $pilotOverride['points'],

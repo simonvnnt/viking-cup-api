@@ -123,9 +123,9 @@ class Person
     #[Groups('personRescuers')]
     private Collection $rescuers;
 
-    #[ORM\OneToOne(mappedBy: 'person', cascade: ['persist', 'remove'])]
-    #[Groups('personPilot')]
-    private ?Pilot $pilot = null;
+    #[ORM\OneToMany(targetEntity: Pilot::class, mappedBy: 'person')]
+    #[Groups('personPilots')]
+    private Collection $pilots;
 
     /**
      * @var Collection<int, Visitor>
@@ -148,6 +148,7 @@ class Person
         $this->commissaires = new ArrayCollection();
         $this->volunteers = new ArrayCollection();
         $this->rescuers = new ArrayCollection();
+        $this->pilots = new ArrayCollection();
         $this->visitors = new ArrayCollection();
         $this->sponsors = new ArrayCollection();
     }
@@ -535,24 +536,32 @@ class Person
         return $this;
     }
 
-    public function getPilot(): ?Pilot
+    /**
+     * @return Collection<int, Pilot>
+     */
+    public function getPilots(): Collection
     {
-        return $this->pilot;
+        return $this->pilots;
     }
 
-    public function setPilot(?Pilot $pilot): static
+    public function addPilot(Pilot $pilot): static
     {
-        // unset the owning side of the relation if necessary
-        if ($pilot === null && $this->pilot !== null) {
-            $this->pilot->setPerson(null);
-        }
-
-        // set the owning side of the relation if necessary
-        if ($pilot !== null && $pilot->getPerson() !== $this) {
+        if (!$this->pilots->contains($pilot)) {
+            $this->pilots->add($pilot);
             $pilot->setPerson($this);
         }
 
-        $this->pilot = $pilot;
+        return $this;
+    }
+
+    public function removePilot(Pilot $pilot): static
+    {
+        if ($this->pilots->removeElement($pilot)) {
+            // set the owning side to null (unless already changed)
+            if ($pilot->getPerson() === $this) {
+                $pilot->setPerson(null);
+            }
+        }
 
         return $this;
     }

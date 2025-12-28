@@ -89,9 +89,21 @@ class Round
     #[ORM\OneToMany(targetEntity: Sponsorship::class, mappedBy: 'round')]
     private Collection $sponsorships;
 
+    /**
+     * @var Collection<int, Accounting>
+     */
+    #[ORM\OneToMany(targetEntity: Accounting::class, mappedBy: 'round')]
+    private Collection $accountings;
+
     #[ORM\ManyToOne(inversedBy: 'rounds')]
     #[Groups(['roundCircuit'])]
     private ?Circuit $circuit = null;
+
+    /**
+     * @var Collection<int, Ticket>
+     */
+    #[ORM\ManyToMany(targetEntity: Ticket::class, mappedBy: 'rounds')]
+    private Collection $tickets;
 
     public function __construct()
     {
@@ -103,8 +115,9 @@ class Round
         $this->commissaires = new ArrayCollection();
         $this->volunteers = new ArrayCollection();
         $this->rescuers = new ArrayCollection();
-        $this->visitors = new ArrayCollection();
         $this->sponsorships = new ArrayCollection();
+        $this->accountings = new ArrayCollection();
+        $this->tickets = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -427,6 +440,36 @@ class Round
         return $this;
     }
 
+    /**
+     * @return Collection<int, Accounting>
+     */
+    public function getAccountings(): Collection
+    {
+        return $this->accountings;
+    }
+
+    public function addAccounting(Accounting $accounting): static
+    {
+        if (!$this->accountings->contains($accounting)) {
+            $this->accountings->add($accounting);
+            $accounting->setRound($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAccounting(Accounting $accounting): static
+    {
+        if ($this->accountings->removeElement($accounting)) {
+            // set the owning side to null (unless already changed)
+            if ($accounting->getRound() === $this) {
+                $accounting->setRound(null);
+            }
+        }
+
+        return $this;
+    }
+
     public function getCircuit(): ?Circuit
     {
         return $this->circuit;
@@ -435,6 +478,33 @@ class Round
     public function setCircuit(?Circuit $circuit): static
     {
         $this->circuit = $circuit;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Ticket>
+     */
+    public function getTickets(): Collection
+    {
+        return $this->tickets;
+    }
+
+    public function addTicket(Ticket $ticket): static
+    {
+        if (!$this->tickets->contains($ticket)) {
+            $this->tickets->add($ticket);
+            $ticket->addRound($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTicket(Ticket $ticket): static
+    {
+        if ($this->tickets->removeElement($ticket)) {
+            $ticket->removeRound($this);
+        }
 
         return $this;
     }

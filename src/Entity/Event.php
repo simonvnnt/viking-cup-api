@@ -33,10 +33,10 @@ class Event
     private Collection $rounds;
 
     /**
-     * @var Collection<int, PilotEvent>
+     * @var Collection<int, Pilot>
      */
-    #[ORM\OneToMany(targetEntity: PilotEvent::class, mappedBy: 'event', orphanRemoval: true)]
-    private Collection $pilotEvents;
+    #[ORM\OneToMany(targetEntity: Pilot::class, mappedBy: 'event', orphanRemoval: true)]
+    private Collection $pilots;
 
     /**
      * @var Collection<int, PilotNumberCounter>
@@ -57,13 +57,20 @@ class Event
     #[Groups(['eventCategories'])]
     private Collection $categories;
 
+    /**
+     * @var Collection<int, Accounting>
+     */
+    #[ORM\OneToMany(targetEntity: Accounting::class, mappedBy: 'event')]
+    private Collection $accountings;
+
     public function __construct()
     {
         $this->rounds = new ArrayCollection();
-        $this->pilotEvents = new ArrayCollection();
+        $this->pilots = new ArrayCollection();
         $this->pilotNumberCounters = new ArrayCollection();
         $this->sponsorships = new ArrayCollection();
         $this->categories = new ArrayCollection();
+        $this->accountings = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -126,29 +133,29 @@ class Event
     }
 
     /**
-     * @return Collection<int, PilotEvent>
+     * @return Collection<int, Pilot>
      */
-    public function getPilotEvents(): Collection
+    public function getPilots(): Collection
     {
-        return $this->pilotEvents;
+        return $this->pilots;
     }
 
-    public function addPilotEvent(PilotEvent $pilotEvent): static
+    public function addPilot(Pilot $pilot): static
     {
-        if (!$this->pilotEvents->contains($pilotEvent)) {
-            $this->pilotEvents->add($pilotEvent);
-            $pilotEvent->setEvent($this);
+        if (!$this->pilots->contains($pilot)) {
+            $this->pilots->add($pilot);
+            $pilot->setEvent($this);
         }
 
         return $this;
     }
 
-    public function removePilotEvent(PilotEvent $pilotEvent): static
+    public function removePilot(Pilot $pilot): static
     {
-        if ($this->pilotEvents->removeElement($pilotEvent)) {
+        if ($this->pilots->removeElement($pilot)) {
             // set the owning side to null (unless already changed)
-            if ($pilotEvent->getEvent() === $this) {
-                $pilotEvent->setEvent(null);
+            if ($pilot->getEvent() === $this) {
+                $pilot->setEvent(null);
             }
         }
 
@@ -235,6 +242,36 @@ class Event
     public function removeCategory(Category $category): static
     {
         $this->categories->removeElement($category);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Accounting>
+     */
+    public function getAccountings(): Collection
+    {
+        return $this->accountings;
+    }
+
+    public function addAccounting(Accounting $accounting): static
+    {
+        if (!$this->accountings->contains($accounting)) {
+            $this->accountings->add($accounting);
+            $accounting->setEvent($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAccounting(Accounting $accounting): static
+    {
+        if ($this->accountings->removeElement($accounting)) {
+            // set the owning side to null (unless already changed)
+            if ($accounting->getEvent() === $this) {
+                $accounting->setEvent(null);
+            }
+        }
 
         return $this;
     }
