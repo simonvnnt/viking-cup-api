@@ -52,7 +52,7 @@ class PersonRepository extends ServiceEntityRepository
     public function findPilotsPersons(): array
     {
         return $this->createQueryBuilder('p')
-            ->innerJoin('p.pilot', 'pi')
+            ->innerJoin('p.pilots', 'pi')
             ->getQuery()
             ->getResult();
     }

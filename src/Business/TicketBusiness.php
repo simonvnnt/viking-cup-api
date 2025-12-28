@@ -23,6 +23,7 @@ use App\Repository\QualifyingRepository;
 use App\Repository\RoundRepository;
 use App\Service\BilletwebService;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Serializer\NameConverter\CamelCaseToSnakeCaseNameConverter;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
@@ -30,7 +31,7 @@ use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Serializer\SerializerInterface;
 
-class BilletwebBusiness
+class TicketBusiness
 {
     private array $eventsMapping;
     private array $fieldsMapping;
@@ -46,6 +47,7 @@ class BilletwebBusiness
         private readonly ConfigHelper                 $configHelper,
         private readonly PilotHelper                  $pilotHelper,
         private readonly EntityManagerInterface       $em,
+        private readonly LoggerInterface              $logger,
         private SerializerInterface                   $serializer
     )
     {
@@ -142,7 +144,12 @@ class BilletwebBusiness
                     }
 
                     $this->em->flush();
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                    $this->logger->error('Error syncing pilot ticket from Billetweb: ' . $e->getMessage(), [
+                        'ticket_id' => $eventTicket->id,
+                        'event_id' => $pilotEventId,
+                    ]);
+                }
             }
 
             $this->em->flush();
@@ -232,7 +239,12 @@ class BilletwebBusiness
                             ->addTicket($ticket);
                         $this->em->persist($visitor);
                     }
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                    $this->logger->error('Error syncing visitor ticket from Billetweb: ' . $e->getMessage(), [
+                        'ticket_id' => $eventTicket->id,
+                        'event_id' => $visitorEventId,
+                    ]);
+                }
             }
 
 
@@ -287,16 +299,18 @@ class BilletwebBusiness
                 $roundName = explode(' - ', trim($billetwebDto->$roundField))[0] ?? null;
 
                 $round = $this->roundRepository->findOneBy(['event' => $event, 'name' => $roundName]);
-                $ticket->addRound($round);
+                if ($round !== null) {
+                    $ticket->addRound($round);
 
-                if (str_contains(strtolower($billetwebDto->$roundDetailField), 'week-end')) {
-                    $roundDetails = $round->getRoundDetails();
-                } else {
-                    $roundDetails = $round->getRoundDetails()->filter(fn(RoundDetail $roundDetail) => str_contains($billetwebDto->$roundDetailField, $roundDetail->getName()));
-                }
+                    if (str_contains(strtolower($billetwebDto->$roundDetailField), 'week-end')) {
+                        $roundDetails = $round->getRoundDetails();
+                    } else {
+                        $roundDetails = $round->getRoundDetails()->filter(fn(RoundDetail $roundDetail) => str_contains($billetwebDto->$roundDetailField, $roundDetail->getName()));
+                    }
 
-                foreach ($roundDetails->toArray() as $roundDetail) {
-                    $ticket->addRoundDetail($roundDetail);
+                    foreach ($roundDetails as $roundDetail) {
+                        $ticket->addRoundDetail($roundDetail);
+                    }
                 }
             }
         } else {
@@ -309,7 +323,9 @@ class BilletwebBusiness
                     $roundName = explode(' - ', trim($billetwebDto->$roundField))[0] ?? null;
                     $round = $this->roundRepository->findOneBy(['event' => $event, 'name' => trim($roundName)]);
 
-                    $ticket->addRound($round);
+                    if ($round !== null) {
+                        $ticket->addRound($round);
+                    }
                 } else {
                     foreach ($event->getRounds() as $round) {
                         $ticket->addRound($round);
