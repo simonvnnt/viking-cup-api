@@ -124,12 +124,22 @@ class Ticket
     #[ORM\ManyToMany(targetEntity: Round::class, inversedBy: 'tickets')]
     private Collection $rounds;
 
+    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'tickets')]
+    private ?self $parentTicket = null;
+
+    /**
+     * @var Collection<int, self>
+     */
+    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parentTicket')]
+    private Collection $tickets;
+
     public function __construct()
     {
         $this->roundDetails = new ArrayCollection();
         $this->pilotRoundCategory = new ArrayCollection();
         $this->visitors = new ArrayCollection();
         $this->rounds = new ArrayCollection();
+        $this->tickets = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -572,6 +582,48 @@ class Ticket
     public function removeRound(Round $round): static
     {
         $this->rounds->removeElement($round);
+
+        return $this;
+    }
+
+    public function getParentTicket(): ?self
+    {
+        return $this->parentTicket;
+    }
+
+    public function setParentTicket(?self $parentTicket): static
+    {
+        $this->parentTicket = $parentTicket;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public function getTickets(): Collection
+    {
+        return $this->tickets;
+    }
+
+    public function addTicket(self $ticket): static
+    {
+        if (!$this->tickets->contains($ticket)) {
+            $this->tickets->add($ticket);
+            $ticket->setParentTicket($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTicket(self $ticket): static
+    {
+        if ($this->tickets->removeElement($ticket)) {
+            // set the owning side to null (unless already changed)
+            if ($ticket->getParentTicket() === $this) {
+                $ticket->setParentTicket(null);
+            }
+        }
 
         return $this;
     }

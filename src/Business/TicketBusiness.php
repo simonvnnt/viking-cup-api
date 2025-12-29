@@ -154,6 +154,8 @@ class TicketBusiness
 
             $this->em->flush();
         }
+
+        $this->setParentTickets();
     }
 
     public function syncVisitors(): void
@@ -247,9 +249,10 @@ class TicketBusiness
                 }
             }
 
-
             $this->em->flush();
         }
+
+        $this->setParentTickets();
     }
 
     private function createTicketFromBilletwebDto(Event $event, BilletwebTicketDto $billetwebDto, string $ticketType): ?Ticket
@@ -370,5 +373,21 @@ class TicketBusiness
                 $this->em->persist($qualifying);
             }
         }
+    }
+
+    private function setParentTickets(): void
+    {
+        $parentTickets = $this->ticketRepository->findBy(['pack' => true]);
+        foreach ($parentTickets as $parentTicket) {
+            $childrenTickets = $this->ticketRepository->findBy(['orderNumber' => $parentTicket->getOrderNumber(), 'pack' => false]);
+            foreach ($childrenTickets as $childTicket) {
+                if ($childTicket->getParentTicket()?->getId() !== $parentTicket->getId()) {
+                    $childTicket->setParentTicket($parentTicket);
+                    $this->em->persist($childTicket);
+                }
+            }
+        }
+
+        $this->em->flush();
     }
 }
