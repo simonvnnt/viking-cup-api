@@ -16,6 +16,23 @@ class CommissaireRepository extends ServiceEntityRepository
         parent::__construct($registry, Commissaire::class);
     }
 
+    public function countCommissaires(?int $eventId, ?int $roundId): int
+    {
+        $qb = $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)');
+
+        if ($roundId !== null) {
+            $qb->andWhere('c.round = :roundId')
+                ->setParameter('roundId', $roundId);
+        } elseif ($eventId !== null) {
+            $qb->innerJoin('c.round', 'r')
+                ->andWhere('r.event = :eventId')
+                ->setParameter('eventId', $eventId);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
     //    /**
     //     * @return Commissaire[] Returns an array of Commissaire objects
     //     */
