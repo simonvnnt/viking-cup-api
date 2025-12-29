@@ -16,6 +16,25 @@ class RoundDetailRepository extends ServiceEntityRepository
         parent::__construct($registry, RoundDetail::class);
     }
 
+    public function findByEventAndRound(?int $eventId, ?int $roundId)
+    {
+        $qb = $this->createQueryBuilder('rd')
+            ->innerJoin('rd.round', 'r')
+            ->innerJoin('r.event', 'e');
+
+        if ($eventId !== null) {
+            $qb->andWhere('e.id = :eventId')
+                ->setParameter('eventId', $eventId);
+        }
+
+        if ($roundId !== null) {
+            $qb->andWhere('r.id = :roundId')
+                ->setParameter('roundId', $roundId);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
     //    /**
     //     * @return RoundDetail[] Returns an array of RoundDetail objects
     //     */

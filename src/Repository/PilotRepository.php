@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Category;
 use App\Entity\Pilot;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -14,6 +15,25 @@ class PilotRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Pilot::class);
+    }
+
+    public function countPilots(?int $eventId, ?int $roundId, Category $category): int
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->innerJoin('p.pilotRoundCategories', 'prc')
+            ->andWhere('prc.category = :category')
+            ->setParameter('category', $category);
+
+        if ($roundId !== null) {
+            $qb->andWhere('prc.round = :roundId')
+                ->setParameter('roundId', $roundId);
+        } elseif ($eventId !== null) {
+            $qb->andWhere('p.event = :eventId')
+                ->setParameter('eventId', $eventId);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
     public function findByName(?string $pilotName): ?Pilot
