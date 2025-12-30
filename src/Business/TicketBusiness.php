@@ -268,7 +268,7 @@ class TicketBusiness
             ->setTicketNumber($billetwebDto->extId)
             ->setBarcode($billetwebDto->barcode)
             ->setCreationDate(new \DateTime($billetwebDto->orderDate))
-            ->setTicketLabel($billetwebDto->ticket)
+            ->setTicketLabel(trim($billetwebDto->ticket))
             ->setLastName($billetwebDto->name)
             ->setFirstName($billetwebDto->firstname)
             ->setEmail($billetwebDto->email)

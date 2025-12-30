@@ -65,7 +65,7 @@ class PilotRoundCategory
     /**
      * @var Collection<int, Ticket>
      */
-    #[ORM\ManyToMany(targetEntity: Ticket::class, mappedBy: 'pilotRoundCategory')]
+    #[ORM\ManyToMany(targetEntity: Ticket::class, mappedBy: 'pilotRoundCategories')]
     private Collection $tickets;
 
     public function __construct()

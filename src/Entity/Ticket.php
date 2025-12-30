@@ -110,7 +110,7 @@ class Ticket
      * @var Collection<int, PilotRoundCategory>
      */
     #[ORM\ManyToMany(targetEntity: PilotRoundCategory::class, inversedBy: 'tickets')]
-    private Collection $pilotRoundCategory;
+    private Collection $pilotRoundCategories;
 
     /**
      * @var Collection<int, Visitor>
@@ -136,7 +136,7 @@ class Ticket
     public function __construct()
     {
         $this->roundDetails = new ArrayCollection();
-        $this->pilotRoundCategory = new ArrayCollection();
+        $this->pilotRoundCategories = new ArrayCollection();
         $this->visitors = new ArrayCollection();
         $this->rounds = new ArrayCollection();
         $this->tickets = new ArrayCollection();
@@ -517,15 +517,15 @@ class Ticket
     /**
      * @return Collection<int, PilotRoundCategory>
      */
-    public function getPilotRoundCategory(): Collection
+    public function getPilotRoundCategories(): Collection
     {
-        return $this->pilotRoundCategory;
+        return $this->pilotRoundCategories;
     }
 
     public function addPilotRoundCategory(PilotRoundCategory $driverRoundCategory): static
     {
-        if (!$this->pilotRoundCategory->contains($driverRoundCategory)) {
-            $this->pilotRoundCategory->add($driverRoundCategory);
+        if (!$this->pilotRoundCategories->contains($driverRoundCategory)) {
+            $this->pilotRoundCategories->add($driverRoundCategory);
         }
 
         return $this;
@@ -533,7 +533,7 @@ class Ticket
 
     public function removePilotRoundCategory(PilotRoundCategory $driverRoundCategory): static
     {
-        $this->pilotRoundCategory->removeElement($driverRoundCategory);
+        $this->pilotRoundCategories->removeElement($driverRoundCategory);
 
         return $this;
     }

@@ -2,6 +2,7 @@
 
 namespace App\Business;
 
+use App\Entity\Ticket;
 use App\Enum\AccountingType;
 use App\Repository\AccountingRepository;
 use App\Repository\CategoryRepository;
@@ -12,6 +13,7 @@ use App\Repository\PilotRepository;
 use App\Repository\RescuerRepository;
 use App\Repository\RoundDetailRepository;
 use App\Repository\RoundRepository;
+use App\Repository\TicketRepository;
 use App\Repository\VisitorRepository;
 use App\Repository\VolunteerRepository;
 
@@ -27,6 +29,7 @@ readonly class KpiBusiness
         private CategoryRepository $categoryRepository,
         private RoundDetailRepository $roundDetailRepository,
         private AccountingRepository $accountingRepository,
+        private TicketRepository $ticketRepository,
         private EventRepository $eventRepository,
         private RoundRepository $roundRepository,
     )
@@ -109,19 +112,19 @@ readonly class KpiBusiness
         foreach ($accountings as $accounting) {
             $categoryId = (int)$accounting->getAccountingCategory()?->getId();
 
-            $price = $accounting->getUnitPrice() * $accounting->getQuantity();
+            $amount = $accounting->getUnitPrice() * $accounting->getQuantity();
 
             if ($round !== null && $accounting->getEvent() !== null && $accounting->getRound() === null) {
-                $price /= $accounting->getEvent()->getRounds()->count();
+                $amount /= $accounting->getEvent()->getRounds()->count();
             }
 
             if (!isset($kpi[$categoryId])) {
                 $kpi[$categoryId] = [
                     'accountingCategory' => $accounting->getAccountingCategory(),
-                    'price' => 0,
+                    'amount' => 0,
                 ];
             }
-            $kpi[$categoryId]['price'] += $price;
+            $kpi[$categoryId]['amount'] += $amount;
         }
 
         return array_values($kpi);
@@ -144,10 +147,91 @@ readonly class KpiBusiness
 
             $kpi[] = [
                 'accounting' => $accounting,
-                'price' => $price,
+                'amount' => $price,
             ];
         }
 
         return $kpi;
+    }
+
+    public function getExpensesTicketsKpi(?int $eventId = null, ?int $roundId = null): array
+    {
+        $event = $eventId !== null ? $this->eventRepository->find($eventId) : null;
+        $round = $roundId !== null ? $this->roundRepository->find($roundId) : null;
+
+        $tickets = $this->ticketRepository->findByEventAndRound($event, $round);
+
+        $kpi = [];
+        $ticketIds = [];
+        foreach ($tickets as $ticket) {
+            if (!$ticket->getPilotRoundCategories()->isEmpty()) {
+                $entity = 'pilot';
+            } elseif (!$ticket->getVisitors()->isEmpty()) {
+                $entity = 'visitor';
+            } else {
+                continue;
+            }
+
+            if ($ticket->getParentTicket() !== null) {
+                $parentTicket = $ticket->getParentTicket();
+                if (in_array($parentTicket->getId(), $ticketIds)) {
+                    continue;
+                }
+                $ticketIds[] = $parentTicket->getId();
+
+                $childrenRounds = [];
+                foreach ($parentTicket->getTickets() as $childTicket) {
+                    foreach ($childTicket->getRounds() as $childRound) {
+                        $childrenRounds[$childRound->getId()] = $childRound;
+                    }
+                }
+                $rounds = $round !== null ? [$round] : $childrenRounds;
+
+                $categoryKey = $parentTicket->getCategory()?->getId() ?? 0;
+
+                if (!isset($kpi[$categoryKey][$parentTicket->getTicketLabel()])) {
+                    $kpi[$categoryKey][$parentTicket->getTicketLabel()] = [
+                        'label' => $parentTicket->getTicketLabel(),
+                        'entity' => $entity,
+                        'rounds' => $rounds,
+                        'category' => $parentTicket->getCategory(),
+                        'amount' => 0,
+                        'qty' => 0,
+                        'isPack' => true
+                    ];
+                }
+
+                $kpi[$categoryKey][$parentTicket->getTicketLabel()]['amount'] += $parentTicket->getAmount() * count($rounds) / count($childrenRounds);
+                $kpi[$categoryKey][$parentTicket->getTicketLabel()]['qty'] += 1;
+            } else {
+                if (in_array($ticket->getId(), $ticketIds)) {
+                    continue;
+                }
+                $ticketIds[] = $ticket->getId();
+
+                $categoryKey = $ticket->getCategory()?->getId() ?? 0;
+
+                if (!isset($kpi[$categoryKey][$ticket->getTicketLabel()])) {
+                    $kpi[$categoryKey][$ticket->getTicketLabel()] = [
+                        'label' => $ticket->getTicketLabel(),
+                        'entity' => $entity,
+                        'rounds' => $ticket->getRounds(),
+                        'category' => $ticket->getCategory(),
+                        'amount' => 0,
+                        'qty' => 0,
+                        'isPack' => false
+                    ];
+                }
+
+                $kpi[$categoryKey][$ticket->getTicketLabel()]['amount'] += $ticket->getAmount();
+                $kpi[$categoryKey][$ticket->getTicketLabel()]['qty'] += 1;
+            }
+        }
+
+        foreach ($kpi as &$item) {
+            $item = array_values($item);
+        }
+
+        return array_merge(...array_values($kpi));
     }
 }

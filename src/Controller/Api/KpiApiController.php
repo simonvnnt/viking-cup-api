@@ -110,4 +110,16 @@ class KpiApiController extends AbstractController
 
         return $this->json($incomesKpi, Response::HTTP_OK, [], ['groups' => ['accounting', 'accountingAccountingCategory', 'accountingCategory', 'accountingRound', 'round', 'accountingEvent', 'event']]);
     }
+
+    #[Route('/expenses/tickets', methods: ['GET'])]
+    public function getExpensesTicketsKpi(
+        KpiBusiness $kpiBusiness,
+        #[MapQueryParameter] ?int $eventId = null,
+        #[MapQueryParameter] ?int $roundId = null,
+    ): JsonResponse
+    {
+        $ticketsKpi = $kpiBusiness->getExpensesTicketsKpi($eventId, $roundId);
+
+        return $this->json($ticketsKpi, Response::HTTP_OK, [], ['groups' => ['round', 'roundEvent', 'event', 'category']]);
+    }
 }
