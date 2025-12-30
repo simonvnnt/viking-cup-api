@@ -110,7 +110,7 @@ class Ticket
      * @var Collection<int, PilotRoundCategory>
      */
     #[ORM\ManyToMany(targetEntity: PilotRoundCategory::class, inversedBy: 'tickets')]
-    private Collection $pilotRoundCategory;
+    private Collection $pilotRoundCategories;
 
     /**
      * @var Collection<int, Visitor>
@@ -124,12 +124,22 @@ class Ticket
     #[ORM\ManyToMany(targetEntity: Round::class, inversedBy: 'tickets')]
     private Collection $rounds;
 
+    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'tickets')]
+    private ?self $parentTicket = null;
+
+    /**
+     * @var Collection<int, self>
+     */
+    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parentTicket')]
+    private Collection $tickets;
+
     public function __construct()
     {
         $this->roundDetails = new ArrayCollection();
-        $this->pilotRoundCategory = new ArrayCollection();
+        $this->pilotRoundCategories = new ArrayCollection();
         $this->visitors = new ArrayCollection();
         $this->rounds = new ArrayCollection();
+        $this->tickets = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -507,15 +517,15 @@ class Ticket
     /**
      * @return Collection<int, PilotRoundCategory>
      */
-    public function getPilotRoundCategory(): Collection
+    public function getPilotRoundCategories(): Collection
     {
-        return $this->pilotRoundCategory;
+        return $this->pilotRoundCategories;
     }
 
     public function addPilotRoundCategory(PilotRoundCategory $driverRoundCategory): static
     {
-        if (!$this->pilotRoundCategory->contains($driverRoundCategory)) {
-            $this->pilotRoundCategory->add($driverRoundCategory);
+        if (!$this->pilotRoundCategories->contains($driverRoundCategory)) {
+            $this->pilotRoundCategories->add($driverRoundCategory);
         }
 
         return $this;
@@ -523,7 +533,7 @@ class Ticket
 
     public function removePilotRoundCategory(PilotRoundCategory $driverRoundCategory): static
     {
-        $this->pilotRoundCategory->removeElement($driverRoundCategory);
+        $this->pilotRoundCategories->removeElement($driverRoundCategory);
 
         return $this;
     }
@@ -572,6 +582,48 @@ class Ticket
     public function removeRound(Round $round): static
     {
         $this->rounds->removeElement($round);
+
+        return $this;
+    }
+
+    public function getParentTicket(): ?self
+    {
+        return $this->parentTicket;
+    }
+
+    public function setParentTicket(?self $parentTicket): static
+    {
+        $this->parentTicket = $parentTicket;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public function getTickets(): Collection
+    {
+        return $this->tickets;
+    }
+
+    public function addTicket(self $ticket): static
+    {
+        if (!$this->tickets->contains($ticket)) {
+            $this->tickets->add($ticket);
+            $ticket->setParentTicket($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTicket(self $ticket): static
+    {
+        if ($this->tickets->removeElement($ticket)) {
+            // set the owning side to null (unless already changed)
+            if ($ticket->getParentTicket() === $this) {
+                $ticket->setParentTicket(null);
+            }
+        }
 
         return $this;
     }

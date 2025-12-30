@@ -3,6 +3,8 @@
 namespace App\Repository;
 
 use App\Entity\Accounting;
+use App\Entity\Event;
+use App\Entity\Round;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -117,6 +119,30 @@ class AccountingRepository extends ServiceEntityRepository
             'items' => $qb->getQuery()->getResult(),
             'total' => $total,
         ];
+    }
+
+    /**
+     * @return Accounting[]
+     */
+    public function findByEventAndRound(string $type, ?Event $event, ?Round $round): array
+    {
+        $qb = $this->createQueryBuilder('a')
+            ->andWhere('a.isDone = 1')
+            ->andWhere('a.isConfirmed = 1')
+            ->andWhere('a.accountingType = :type')
+            ->setParameter('type', $type);
+
+        if ($round !== null) {
+            $qb->andWhere('a.round = :round OR a.event = :event')
+                ->setParameter('round', $round)
+                ->setParameter('event', $round->getEvent());
+        } else if ($event !== null) {
+            $qb->leftJoin('a.round', 'r')
+                ->andWhere('a.event = :event OR r.event = :event')
+                ->setParameter('event', $event);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
 //    /**
