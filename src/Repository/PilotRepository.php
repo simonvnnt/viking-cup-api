@@ -20,7 +20,8 @@ class PilotRepository extends ServiceEntityRepository
     public function countPilots(?int $eventId, ?int $roundId, Category $category): int
     {
         $qb = $this->createQueryBuilder('p')
-            ->select('COUNT(p.id)')
+            ->select('COUNT(DISTINCT p.id)')
+            ->distinct()
             ->innerJoin('p.pilotRoundCategories', 'prc')
             ->andWhere('prc.category = :category')
             ->setParameter('category', $category);

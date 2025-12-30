@@ -19,7 +19,7 @@ class CommissaireRepository extends ServiceEntityRepository
     public function countCommissaires(?int $eventId, ?int $roundId): int
     {
         $qb = $this->createQueryBuilder('c')
-            ->select('COUNT(c.id)');
+            ->select('COUNT(DISTINCT c.id)');
 
         if ($roundId !== null) {
             $qb->andWhere('c.round = :roundId')

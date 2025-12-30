@@ -19,7 +19,7 @@ class RescuerRepository extends ServiceEntityRepository
     public function countRescuers(?int $eventId, ?int $roundId): int
     {
         $qb = $this->createQueryBuilder('r')
-            ->select('COUNT(r.id)');
+            ->select('COUNT(DISTINCT r.id)');
 
         if ($roundId !== null) {
             $qb->andWhere('r.round = :roundId')

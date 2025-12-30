@@ -21,7 +21,7 @@ class VisitorRepository extends ServiceEntityRepository
     public function countVisitors(RoundDetail $roundDetail): int
     {
         return $this->createQueryBuilder('v')
-            ->select('COUNT(v.id)')
+            ->select('COUNT(DISTINCT v.id)')
             ->andWhere('v.roundDetail = :roundDetail')
             ->setParameter('roundDetail', $roundDetail)
             ->getQuery()

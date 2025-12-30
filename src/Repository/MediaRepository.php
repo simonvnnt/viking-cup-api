@@ -19,7 +19,7 @@ class MediaRepository extends ServiceEntityRepository
     public function countMedias(?int $eventId, ?int $roundId): int
     {
         $qb = $this->createQueryBuilder('m')
-            ->select('COUNT(m.id)')
+            ->select('COUNT(DISTINCT m.id)')
             ->andWhere('m.selected = 1');
 
         if ($roundId !== null) {

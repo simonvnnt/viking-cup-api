@@ -19,7 +19,7 @@ class VolunteerRepository extends ServiceEntityRepository
     public function countVolunteers(?int $eventId, ?int $roundId): int
     {
         $qb = $this->createQueryBuilder('v')
-            ->select('COUNT(v.id)');
+            ->select('COUNT(DISTINCT v.id)');
 
         if ($roundId !== null) {
             $qb->andWhere('v.round = :roundId')
