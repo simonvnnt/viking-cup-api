@@ -29,8 +29,8 @@ class BattleRepository extends ServiceEntityRepository
     public function getBattleVersus(Round $round, Category $category, int $passage = null): array
     {
         $qb = $this->createQueryBuilder('b')
-            ->leftJoin('b.pilotRoundCategory1', 'prc1')
-            ->leftJoin('b.pilotRoundCategory2', 'prc2')
+            ->leftJoin('b.leader', 'prc1')
+            ->leftJoin('b.chaser', 'prc2')
             ->andWhere('prc1 IS NULL OR prc1.round = :round')
             ->andWhere('prc1 IS NULL OR prc1.category = :category')
             ->andWhere('prc2 IS NULL OR prc2.round = :round')
@@ -55,9 +55,9 @@ class BattleRepository extends ServiceEntityRepository
                 'SUM(CASE WHEN b.winner = prc THEN 1 ELSE 0 END) AS wins',
                 'MAX(CASE WHEN b.winner != prc THEN b.passage ELSE 0 END) AS last_defeat_passage'
             ])
-            ->leftJoin('b.pilotRoundCategory1', 'prc1')
-            ->leftJoin('b.pilotRoundCategory2', 'prc2')
-            ->innerJoin(PilotRoundCategory::class, 'prc', Join::WITH, 'b.pilotRoundCategory1 = prc OR b.pilotRoundCategory2 = prc')
+            ->leftJoin('b.leader', 'prc1')
+            ->leftJoin('b.chaser', 'prc2')
+            ->innerJoin(PilotRoundCategory::class, 'prc', Join::WITH, 'b.leader = prc OR b.chaser = prc')
             ->andWhere('prc1 IS NULL OR (prc1.round = :round AND prc1.isEngaged = :isEngaged)')
             ->andWhere('prc1 IS NULL OR (prc1.category = :category AND prc1.isEngaged = :isEngaged)')
             ->andWhere('prc2 IS NULL OR (prc2.round = :round AND prc2.isEngaged = :isEngaged)')
@@ -76,8 +76,8 @@ class BattleRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('b')
             ->select('MAX(b.passage)')
-            ->leftJoin('b.pilotRoundCategory1', 'prc1')
-            ->leftJoin('b.pilotRoundCategory2', 'prc2')
+            ->leftJoin('b.leader', 'prc1')
+            ->leftJoin('b.chaser', 'prc2')
             ->andWhere('prc1 IS NULL OR (prc1.round = :round AND prc1.isEngaged = :isEngaged)')
             ->andWhere('prc1 IS NULL OR (prc1.category = :category AND prc1.isEngaged = :isEngaged)')
             ->andWhere('prc2 IS NULL OR (prc2.round = :round AND prc2.isEngaged = :isEngaged)')

@@ -16,12 +16,12 @@ class Battle
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'battles')]
-    #[Groups(['battlePilotRoundCategory1'])]
-    private ?PilotRoundCategory $pilotRoundCategory1 = null;
+    #[Groups(['battleLeader'])]
+    private ?PilotRoundCategory $leader = null;
 
     #[ORM\ManyToOne(inversedBy: 'battles')]
-    #[Groups(['battlePilotRoundCategory2'])]
-    private ?PilotRoundCategory $pilotRoundCategory2 = null;
+    #[Groups(['battleChaser'])]
+    private ?PilotRoundCategory $chaser = null;
 
     #[ORM\ManyToOne]
     #[Groups(['battleWinner'])]
@@ -36,26 +36,26 @@ class Battle
         return $this->id;
     }
 
-    public function getPilotRoundCategory1(): ?PilotRoundCategory
+    public function getLeader(): ?PilotRoundCategory
     {
-        return $this->pilotRoundCategory1;
+        return $this->leader;
     }
 
-    public function setPilotRoundCategory1(?PilotRoundCategory $pilotRoundCategory1): static
+    public function setLeader(?PilotRoundCategory $leader): static
     {
-        $this->pilotRoundCategory1 = $pilotRoundCategory1;
+        $this->leader = $leader;
 
         return $this;
     }
 
-    public function getPilotRoundCategory2(): ?PilotRoundCategory
+    public function getChaser(): ?PilotRoundCategory
     {
-        return $this->pilotRoundCategory2;
+        return $this->chaser;
     }
 
-    public function setPilotRoundCategory2(?PilotRoundCategory $pilotRoundCategory2): static
+    public function setChaser(?PilotRoundCategory $chaser): static
     {
-        $this->pilotRoundCategory2 = $pilotRoundCategory2;
+        $this->chaser = $chaser;
 
         return $this;
     }

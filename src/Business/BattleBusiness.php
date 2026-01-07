@@ -36,9 +36,9 @@ readonly class BattleBusiness
         return $this->battleRepository->getBattleVersus($round, $category);
     }
 
-    public function resetBattle(Round $round, Category $category): void
+    public function resetBattle(Round $round, Category $category, ?int $passage = null): void
     {
-        $battles = $this->battleRepository->getBattleVersus($round, $category);
+        $battles = $this->battleRepository->getBattleVersus($round, $category, $passage);
 
         foreach ($battles as $battle) {
             $this->em->remove($battle);
@@ -54,6 +54,10 @@ readonly class BattleBusiness
 
         $qualifyingRanking = $this->getBattleQualifier($category, $qualifyingRanking);
 
+        if (empty($qualifyingRanking)) {
+            throw new Exception('Aucun pilote qualifié pour cette catégorie.');
+        }
+
         foreach ($battleVersus as $versus) {
             /** @var Pilot $pilot1 */
             $pilot1 = $qualifyingRanking[$versus->getPilotQualifPosition1() -1]['pilot'] ?? null;
@@ -64,13 +68,14 @@ readonly class BattleBusiness
             $pilotRoundCategory2 = $pilot2?->getPilotRoundCategories()->filter(fn(PilotRoundCategory $pilotRoundCategory) => $pilotRoundCategory->getRound()->getId() === $round->getId() && $pilotRoundCategory->getCategory()->getId() === $category->getId() && $pilotRoundCategory->isCompeting() === true && $pilotRoundCategory->isEngaged() === true)->first();
             $pilotRoundCategory2 = $pilotRoundCategory2 !== false ? $pilotRoundCategory2 : null;
 
+            // cas double monte
             if ($pilotRoundCategory1 !== null && $pilotRoundCategory2 !== null) {
                 if ($pilotRoundCategory1->getSecondPilot()?->getId() === $pilotRoundCategory2->getPilot()->getId() ||
                     $pilotRoundCategory2->getSecondPilot()?->getId() === $pilotRoundCategory1->getPilot()->getId()) {
 
                     $battle = new Battle();
-                    $battle->setPilotRoundCategory1($pilotRoundCategory1)
-                        ->setPilotRoundCategory2($pilotRoundCategory2)
+                        $battle->setLeader($pilotRoundCategory1)
+                        ->setChaser($pilotRoundCategory2)
                         ->setWinner($pilotRoundCategory1->isMainPilot() ? $pilotRoundCategory1 : $pilotRoundCategory2)
                         ->setPassage(1);
                     $this->em->persist($battle);
@@ -79,16 +84,12 @@ readonly class BattleBusiness
                 }
             }
 
+            // cas classique
             $battle = new Battle();
-            $battle->setPilotRoundCategory1($pilotRoundCategory1)
-                ->setPilotRoundCategory2($pilotRoundCategory2)
+            $battle->setLeader($pilotRoundCategory1)
+                ->setChaser($pilotRoundCategory2)
                 ->setPassage(1);
 
-            // if one of versus is null, so the other is the winner
-            if ($pilot1 === null || $pilot2 === null) {
-                $winner = $pilotRoundCategory1 ?? $pilotRoundCategory2;
-                $battle->setWinner($winner);
-            }
             $this->em->persist($battle);
         }
 
@@ -101,12 +102,9 @@ readonly class BattleBusiness
         if ($category->getId() === 1) {
             $battleQualifiers = array_slice($qualifyingRanking, 0, 16);
             $outBattleQualifiers = array_slice($qualifyingRanking, 16);
-        // if category "Compétition" (id 2) => 32 first pilots
-        } elseif ($category->getId() === 2) {
+        } else {
             $battleQualifiers = array_slice($qualifyingRanking, 0, 32);
             $outBattleQualifiers = array_slice($qualifyingRanking, 32);
-        } else {
-            throw new Exception('Category id is invalid');
         }
 
         // don't keep qualifiers with point 0 as the best passage
@@ -134,19 +132,10 @@ readonly class BattleBusiness
             throw new Exception("Le tour suivant a déjà été généré !");
         }
 
-        $battles = $this->battleRepository->getBattleVersus($round, $category, $passage);
-        $winners = array_filter($battles, fn(Battle $battle) => $battle->getWinner() !== null || ($battle->getPilotRoundCategory1() === null && $battle->getPilotRoundCategory2() === null));
-
-        if (count($battles) !== count($winners)) {
-            throw new Exception("Impossible de générer le tour suivant, il manque des gagnants !");
-        }
-
-        if (count($winners) === 1) {
-            return;
-        }
+        $winners = $this->battleRepository->getBattleVersus($round, $category, $passage);
 
         if ($nextPassage === 5) {
-            $this->generateThirdPlacePlayoff($winners, $nextPassage + 1);
+            $this->generateThirdPlacePlayoff($round,$category, $winners, $nextPassage + 1);
         }
 
         for ($i = 0; $i < count($winners); $i += 2) {
@@ -160,14 +149,9 @@ readonly class BattleBusiness
             }
 
             $battle = new Battle();
-            $battle->setPilotRoundCategory1($winner1)
-                ->setPilotRoundCategory2($winner2)
+            $battle->setLeader($winner1)
+                ->setChaser($winner2)
                 ->setPassage($nextPassage);
-
-            if ($winner1 === null || $winner2 === null) {
-                $winner = $winner1 ?? $winner2;
-                $battle->setWinner($winner);
-            }
 
             $this->em->persist($battle);
         }
@@ -175,26 +159,30 @@ readonly class BattleBusiness
         $this->em->flush();
     }
 
-    public function setBattleWinner(Battle $battle, PilotRoundCategory $winner): void
+    public function setBattleWinner(Round $round, Category $category, Battle $battle, ?PilotRoundCategory $winner): void
     {
-        if ($battle->getWinner() !== null) {
-            $nextPassage = $battle->getPassage() + 1;
-            $nextBattles = $this->battleRepository->getBattleVersus($winner->getRound(), $winner->getCategory(), $nextPassage);
-
-            foreach ($nextBattles as $nextBattle) {
-                if ($battle->getWinner() === $nextBattle->getPilotRoundCategory1()) {
-                    $nextBattle->setPilotRoundCategory1($winner);
-                    $this->em->persist($nextBattle);
-                } elseif ($battle->getWinner() === $nextBattle->getPilotRoundCategory2()) {
-                    $nextBattle->setPilotRoundCategory2($winner);
-                    $this->em->persist($nextBattle);
-                }
-            }
-        }
-
         $battle->setWinner($winner);
         $this->em->persist($battle);
         $this->em->flush();
+
+        $this->recursiveRegenerateNextRound($round, $category, $battle->getPassage());
+    }
+
+    public function recursiveRegenerateNextRound(Round $round, Category $category, int $passage): void
+    {
+        $nextPassage = $passage + 1;
+        $nextBattles = $this->battleRepository->getBattleVersus($round, $category, $nextPassage);
+
+        if (count($nextBattles) > 0) {
+            foreach ($nextBattles as $nextBattle) {
+                $this->em->remove($nextBattle);
+            }
+            $this->em->flush();
+
+            $this->generateNextRound($round, $category, $passage);
+
+            $this->recursiveRegenerateNextRound($round, $category, $nextPassage);
+        }
     }
 
     public function getBattleRanking(Round $round, Category $category): array
@@ -245,17 +233,33 @@ readonly class BattleBusiness
         return $battlesRanking;
     }
 
-    private function generateThirdPlacePlayoff(array $winners, int $passage): void
+    private function generateThirdPlacePlayoff(Round $round, Category $category, array $winners, int $passage): void
     {
-        $losers = array_map(fn(Battle $battle) => $battle->getWinner() === $battle->getPilotRoundCategory1() ? $battle->getPilotRoundCategory2() : $battle->getPilotRoundCategory1(), $winners);
+        $losers = array_map(fn(Battle $battle) => $battle->getWinner() === $battle->getLeader() ? $battle->getChaser() : $battle->getLeader(), $winners);
 
         if (count($losers) !== 2) {
             return;
         }
 
+        $qualifyingRanking = $this->qualifyingBusiness->getQualifyingRanking($round, $category);
+
+        $rankingMap = [];
+        foreach ($qualifyingRanking as $rank) {
+            if (isset($rank['pilot'])) {
+                $rankingMap[$rank['pilot']->getId()] = $rank['position'];
+            }
+        }
+
+        usort($losers, function (PilotRoundCategory $loser1, PilotRoundCategory $loser2) use ($rankingMap) {
+            $position1 = $rankingMap[$loser1->getPilot()->getId()] ?? PHP_INT_MAX;
+            $position2 = $rankingMap[$loser2->getPilot()->getId()] ?? PHP_INT_MAX;
+
+            return $position1 <=> $position2;
+        });
+
         $battle = new Battle();
-        $battle->setPilotRoundCategory1($losers[0])
-            ->setPilotRoundCategory2($losers[1])
+        $battle->setLeader($losers[0])
+            ->setChaser($losers[1])
             ->setPassage($passage);
 
         $this->em->persist($battle);
@@ -266,14 +270,6 @@ readonly class BattleBusiness
         $maxPassage = $this->battleRepository->getMaxPassage($round, $category);
         if ($maxPassage < 6) {
             return false;
-        }
-
-        $battles = $this->battleRepository->getBattleVersus($round, $category);
-
-        foreach ($battles as $battle) {
-            if ($battle->getWinner() === null) {
-                return false;
-            }
         }
 
         return true;

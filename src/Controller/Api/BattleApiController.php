@@ -29,7 +29,7 @@ class BattleApiController extends AbstractController
 
         $battleVersus = $battleBusiness->getBattleVersus($round, $category);
 
-        return $this->json($battleVersus, 200, [], ['groups' => ['battle', 'battlePilotRoundCategory1', 'battlePilotRoundCategory2', 'battleWinner', 'pilotRoundCategory', 'pilotRoundCategoryPilot', 'pilot', 'pilotPerson', 'person', 'pilotEvent', 'event']]);
+        return $this->json($battleVersus, 200, [], ['groups' => ['battle', 'battleLeader', 'battleChaser', 'battleWinner', 'pilotRoundCategory', 'pilotRoundCategoryPilot', 'pilot', 'pilotPerson', 'person', 'pilotEvent', 'event']]);
     }
 
     #[Route('/reset', name: 'reset_battle', methods: ['POST'])]
@@ -87,11 +87,18 @@ class BattleApiController extends AbstractController
     #[Route('/{battle}/winner/{winner}', name: 'set_battle_winner', methods: ['PUT'])]
     public function setBattleWinner(
         BattleBusiness $battleBusiness,
+        RoundRepository $roundRepository,
+        CategoryRepository $categoryRepository,
         Battle $battle,
-        PilotRoundCategory $winner
+        ?PilotRoundCategory $winner,
+        #[MapQueryParameter] int $round,
+        #[MapQueryParameter] int $category
     ): Response
     {
-        $battleBusiness->setBattleWinner($battle, $winner);
+        $round = $roundRepository->find($round);
+        $category = $categoryRepository->find($category);
+
+        $battleBusiness->setBattleWinner($round, $category, $battle, $winner);
 
         return new Response();
     }
