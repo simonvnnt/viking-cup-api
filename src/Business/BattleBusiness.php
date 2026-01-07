@@ -74,7 +74,7 @@ readonly class BattleBusiness
                     $pilotRoundCategory2->getSecondPilot()?->getId() === $pilotRoundCategory1->getPilot()->getId()) {
 
                     $battle = new Battle();
-                        $battle->setLeader($pilotRoundCategory1)
+                    $battle->setLeader($pilotRoundCategory1)
                         ->setChaser($pilotRoundCategory2)
                         ->setWinner($pilotRoundCategory1->isMainPilot() ? $pilotRoundCategory1 : $pilotRoundCategory2)
                         ->setPassage(1);
