@@ -36,9 +36,9 @@ readonly class BattleBusiness
         return $this->battleRepository->getBattleVersus($round, $category);
     }
 
-    public function resetBattle(Round $round, Category $category): void
+    public function resetBattle(Round $round, Category $category, ?int $passage = null): void
     {
-        $battles = $this->battleRepository->getBattleVersus($round, $category);
+        $battles = $this->battleRepository->getBattleVersus($round, $category, $passage);
 
         foreach ($battles as $battle) {
             $this->em->remove($battle);
@@ -102,12 +102,9 @@ readonly class BattleBusiness
         if ($category->getId() === 1) {
             $battleQualifiers = array_slice($qualifyingRanking, 0, 16);
             $outBattleQualifiers = array_slice($qualifyingRanking, 16);
-        // if category "Compétition" (id 2) => 32 first pilots
-        } elseif ($category->getId() === 2) {
+        } else {
             $battleQualifiers = array_slice($qualifyingRanking, 0, 32);
             $outBattleQualifiers = array_slice($qualifyingRanking, 32);
-        } else {
-            throw new Exception('Category id is invalid');
         }
 
         // don't keep qualifiers with point 0 as the best passage
@@ -164,24 +161,28 @@ readonly class BattleBusiness
 
     public function setBattleWinner(Round $round, Category $category, Battle $battle, ?PilotRoundCategory $winner): void
     {
-        if ($battle->getWinner() !== null) {
-            $nextPassage = $battle->getPassage() + 1;
-            $nextBattles = $this->battleRepository->getBattleVersus($round, $category, $nextPassage);
-
-            foreach ($nextBattles as $nextBattle) {
-                if ($battle->getWinner() === $nextBattle->getLeader()) {
-                    $nextBattle->setLeader($winner);
-                    $this->em->persist($nextBattle);
-                } elseif ($battle->getWinner() === $nextBattle->getChaser()) {
-                    $nextBattle->setChaser($winner);
-                    $this->em->persist($nextBattle);
-                }
-            }
-        }
-
         $battle->setWinner($winner);
         $this->em->persist($battle);
         $this->em->flush();
+
+        $this->recursiveRegenerateNextRound($round, $category, $battle->getPassage());
+    }
+
+    public function recursiveRegenerateNextRound(Round $round, Category $category, int $passage): void
+    {
+        $nextPassage = $passage + 1;
+        $nextBattles = $this->battleRepository->getBattleVersus($round, $category, $nextPassage);
+
+        if (count($nextBattles) > 0) {
+            foreach ($nextBattles as $nextBattle) {
+                $this->em->remove($nextBattle);
+            }
+            $this->em->flush();
+
+            $this->generateNextRound($round, $category, $passage);
+
+            $this->recursiveRegenerateNextRound($round, $category, $nextPassage);
+        }
     }
 
     public function getBattleRanking(Round $round, Category $category): array
