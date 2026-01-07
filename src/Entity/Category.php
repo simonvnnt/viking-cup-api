@@ -39,11 +39,26 @@ class Category
     #[ORM\OneToMany(targetEntity: PilotNumberCounter::class, mappedBy: 'category')]
     private Collection $pilotNumberCounters;
 
+    /**
+     * @var Collection<int, Event>
+     */
+    #[ORM\ManyToMany(targetEntity: Event::class, mappedBy: 'categories')]
+    #[Groups(['categoryEvents'])]
+    private Collection $events;
+
+    /**
+     * @var Collection<int, Ticket>
+     */
+    #[ORM\OneToMany(targetEntity: Ticket::class, mappedBy: 'category')]
+    private Collection $tickets;
+
     public function __construct()
     {
         $this->pilotRoundCategories = new ArrayCollection();
         $this->roundCategories = new ArrayCollection();
         $this->pilotNumberCounters = new ArrayCollection();
+        $this->events = new ArrayCollection();
+        $this->tickets = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -147,6 +162,63 @@ class Category
             // set the owning side to null (unless already changed)
             if ($pilotNumberCounter->getCategory() === $this) {
                 $pilotNumberCounter->setCategory(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Event>
+     */
+    public function getEvents(): Collection
+    {
+        return $this->events;
+    }
+
+    public function addEvent(Event $event): static
+    {
+        if (!$this->events->contains($event)) {
+            $this->events->add($event);
+            $event->addCategory($this);
+        }
+
+        return $this;
+    }
+
+    public function removeEvent(Event $event): static
+    {
+        if ($this->events->removeElement($event)) {
+            $event->removeCategory($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Ticket>
+     */
+    public function getTickets(): Collection
+    {
+        return $this->tickets;
+    }
+
+    public function addTicket(Ticket $ticket): static
+    {
+        if (!$this->tickets->contains($ticket)) {
+            $this->tickets->add($ticket);
+            $ticket->setCategory($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTicket(Ticket $ticket): static
+    {
+        if ($this->tickets->removeElement($ticket)) {
+            // set the owning side to null (unless already changed)
+            if ($ticket->getCategory() === $this) {
+                $ticket->setCategory(null);
             }
         }
 

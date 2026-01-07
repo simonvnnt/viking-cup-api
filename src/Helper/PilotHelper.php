@@ -4,15 +4,14 @@ namespace App\Helper;
 
 use App\Entity\Category;
 use App\Entity\Event;
-use App\Entity\Pilot;
 use App\Entity\PilotNumberCounter;
-use App\Repository\PilotEventRepository;
+use App\Repository\PilotRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 readonly class PilotHelper
 {
     public function __construct(
-        private PilotEventRepository $pilotEventRepository,
+        private PilotRepository $pilotRepository,
         private EntityManagerInterface $em
     ) {
     }
@@ -36,8 +35,8 @@ readonly class PilotHelper
 
     private function isValidPilotNumber(?int $pilotNumber): bool
     {
-        $pilotEvent = $this->pilotEventRepository->findBy(['pilotNumber' => $pilotNumber]);
+        $pilot = $this->pilotRepository->findBy(['pilotNumber' => $pilotNumber]);
 
-        return $pilotNumber !== null && $pilotNumber > 0 && count($pilotEvent) === 0;
+        return $pilotNumber !== null && $pilotNumber > 0 && count($pilot) === 0;
     }
 }

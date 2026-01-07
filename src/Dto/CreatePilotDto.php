@@ -10,7 +10,7 @@ class CreatePilotDto
         public ?bool   $ffsaLicensee = null,
         public ?string $ffsaNumber = null,
         public array   $participations = [],
-        public ?int    $number = null,
+        public ?int    $pilotNumber = null,
         public bool    $receiveWindscreenBand = false,
     )
     {}

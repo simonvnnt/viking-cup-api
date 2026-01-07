@@ -5,6 +5,7 @@ namespace App\Controller\Api;
 use App\Business\PilotBusiness;
 use App\Dto\CreatePilotDto;
 use App\Dto\PilotDto;
+use App\Entity\Person;
 use App\Entity\Pilot;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -53,7 +54,7 @@ class PilotApiController extends AbstractController
             $receivedWindscreenBand
         );
 
-        return $this->json($pilots, Response::HTTP_OK, [], ['groups' => ['pilot', 'pilotPilotRoundCategories', 'pilotRoundCategory', 'pilotRoundCategoryRound', 'pilotRoundCategoryCategory', 'category', 'personPilot', 'person', 'personRounds', 'round', 'roundEvent', 'event', 'pilotEvents', 'pilotEvent', 'pilotEventEvent', 'personRoundDetails', 'roundDetail', 'personLinks', 'link', 'linkLinkType', 'linkType']]);
+        return $this->json($pilots, Response::HTTP_OK, [], ['groups' => ['pilot', 'pilotPilotRoundCategories', 'pilotRoundCategory', 'pilotRoundCategoryRound', 'pilotRoundCategoryCategory', 'category', 'personPilots', 'person', 'personRounds', 'round', 'roundEvent', 'event', 'pilotEvent', 'personRoundDetails', 'roundDetail', 'personLinks', 'link', 'linkLinkType', 'linkType']]);
     }
 
     #[Route('', name: 'create', methods: ['POST'])]
@@ -67,25 +68,25 @@ class PilotApiController extends AbstractController
         return new Response();
     }
 
-    #[Route('/{pilot}', name: 'update', methods: ['PUT'])]
+    #[Route('/{person}', name: 'update', methods: ['PUT'])]
     public function updatePilot(
         PilotBusiness $pilotBusiness,
-        Pilot $pilot,
+        Person $person,
         #[MapRequestPayload] PilotDto $pilotDto
     ): Response
     {
-        $pilotBusiness->updatePersonPilot($pilot, $pilotDto);
+        $pilotBusiness->updatePersonPilot($person, $pilotDto);
 
         return new Response();
     }
 
-    #[Route('/{pilot}', name: 'delete', methods: ['DELETE'])]
-    public function deletePilot(
+    #[Route('/{person}', name: 'delete', methods: ['DELETE'])]
+    public function deletePersonPilot(
         PilotBusiness $pilotBusiness,
-        Pilot $pilot
+        Person $person
     ): Response
     {
-        $pilotBusiness->deletePilot($pilot);
+        $pilotBusiness->deletePersonPilot($person);
 
         return new Response(null, Response::HTTP_NO_CONTENT);
     }

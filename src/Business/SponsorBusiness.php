@@ -238,6 +238,9 @@ readonly class SponsorBusiness
 
         /** @var SponsorshipDto $sponsorshipDto */
         foreach ($sponsorshipsDto as $key => $sponsorshipDto) {
+            $event = null;
+            $round = null;
+
             if ($sponsorshipDto->id) {
                 $sponsorship = $sponsorships->filter(fn(Sponsorship $s) => $s->getId() === $sponsorshipDto->id)->first();
                 if ($sponsorship === false) {

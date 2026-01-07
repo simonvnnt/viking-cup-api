@@ -20,9 +20,19 @@ class Pilot
     #[Groups(['pilot'])]
     private ?int $id = null;
 
-    #[ORM\OneToOne(inversedBy: 'pilot', cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne(inversedBy: 'pilots')]
+    #[ORM\JoinColumn(nullable: false)]
     #[Groups(['pilotPerson'])]
     private ?Person $person = null;
+
+    #[ORM\ManyToOne(inversedBy: 'pilots')]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['pilotEvent'])]
+    private ?Event $event = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['pilot'])]
+    private ?int $pilotNumber = null;
 
     #[ORM\Column(nullable: true)]
     #[Groups(['pilot'])]
@@ -31,6 +41,22 @@ class Pilot
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['pilot'])]
     private ?string $ffsaNumber = null;
+
+    #[ORM\Column]
+    #[Groups(['pilot'])]
+    private ?bool $receiveWindscreenBand = null;
+
+    #[ORM\Column]
+    #[Groups(['pilot'])]
+    private ?bool $wildCard = false;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['pilot'])]
+    private ?bool $driverLicense = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['pilot'])]
+    private ?string $driverLicenseNumber = null;
 
     /**
      * @var Collection<int, PilotRoundCategory>
@@ -46,17 +72,9 @@ class Pilot
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $updatedAt = null;
 
-    /**
-     * @var Collection<int, PilotEvent>
-     */
-    #[ORM\OneToMany(targetEntity: PilotEvent::class, mappedBy: 'pilot', orphanRemoval: true)]
-    #[Groups(['pilotEvents'])]
-    private Collection $pilotEvents;
-
     public function __construct()
     {
         $this->pilotRoundCategories = new ArrayCollection();
-        $this->pilotEvents = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -87,6 +105,30 @@ class Pilot
         return $this;
     }
 
+    public function getEvent(): ?Event
+    {
+        return $this->event;
+    }
+
+    public function setEvent(?Event $event): static
+    {
+        $this->event = $event;
+
+        return $this;
+    }
+
+    public function getPilotNumber(): ?int
+    {
+        return $this->pilotNumber;
+    }
+
+    public function setPilotNumber(?int $pilotNumber): static
+    {
+        $this->pilotNumber = $pilotNumber;
+
+        return $this;
+    }
+
     public function isFfsaLicensee(): ?bool
     {
         return $this->ffsaLicensee;
@@ -107,6 +149,30 @@ class Pilot
     public function setFfsaNumber(?string $ffsaNumber): static
     {
         $this->ffsaNumber = $ffsaNumber;
+
+        return $this;
+    }
+
+    public function isReceiveWindscreenBand(): ?bool
+    {
+        return $this->receiveWindscreenBand;
+    }
+
+    public function setReceiveWindscreenBand(bool $receiveWindscreenBand): static
+    {
+        $this->receiveWindscreenBand = $receiveWindscreenBand;
+
+        return $this;
+    }
+
+    public function isWildCard(): ?bool
+    {
+        return $this->wildCard;
+    }
+
+    public function setWildCard(bool $wildCard): static
+    {
+        $this->wildCard = $wildCard;
 
         return $this;
     }
@@ -165,32 +231,26 @@ class Pilot
         return $this;
     }
 
-    /**
-     * @return Collection<int, PilotEvent>
-     */
-    public function getPilotEvents(): Collection
+    public function isDriverLicense(): ?bool
     {
-        return $this->pilotEvents;
+        return $this->driverLicense;
     }
 
-    public function addPilotEvent(PilotEvent $pilotEvent): static
+    public function setDriverLicense(?bool $driverLicense): static
     {
-        if (!$this->pilotEvents->contains($pilotEvent)) {
-            $this->pilotEvents->add($pilotEvent);
-            $pilotEvent->setPilot($this);
-        }
+        $this->driverLicense = $driverLicense;
 
         return $this;
     }
 
-    public function removePilotEvent(PilotEvent $pilotEvent): static
+    public function getDriverLicenseNumber(): ?string
     {
-        if ($this->pilotEvents->removeElement($pilotEvent)) {
-            // set the owning side to null (unless already changed)
-            if ($pilotEvent->getPilot() === $this) {
-                $pilotEvent->setPilot(null);
-            }
-        }
+        return $this->driverLicenseNumber;
+    }
+
+    public function setDriverLicenseNumber(?string $driverLicenseNumber): static
+    {
+        $this->driverLicenseNumber = $driverLicenseNumber;
 
         return $this;
     }

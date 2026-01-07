@@ -14,10 +14,10 @@ class PilotDto
         public ?string $instagram = null,
         public ?string $nationality = null,
         public array   $presence = [],
+        public ?int    $eventId = null,
         public ?bool   $ffsaLicensee = null,
         public ?string $ffsaNumber = null,
-        public ?int    $eventId = null,
-        public ?int    $number = null,
+        public ?int    $pilotNumber = null,
         public bool    $receiveWindscreenBand = false,
     )
     {}

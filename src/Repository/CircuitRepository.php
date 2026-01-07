@@ -2,39 +2,22 @@
 
 namespace App\Repository;
 
-use App\Entity\Commissaire;
+use App\Entity\Circuit;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<Commissaire>
+ * @extends ServiceEntityRepository<Circuit>
  */
-class CommissaireRepository extends ServiceEntityRepository
+class CircuitRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Commissaire::class);
-    }
-
-    public function countCommissaires(?int $eventId, ?int $roundId): int
-    {
-        $qb = $this->createQueryBuilder('c')
-            ->select('COUNT(DISTINCT c.id)');
-
-        if ($roundId !== null) {
-            $qb->andWhere('c.round = :roundId')
-                ->setParameter('roundId', $roundId);
-        } elseif ($eventId !== null) {
-            $qb->innerJoin('c.round', 'r')
-                ->andWhere('r.event = :eventId')
-                ->setParameter('eventId', $eventId);
-        }
-
-        return (int) $qb->getQuery()->getSingleScalarResult();
+        parent::__construct($registry, Circuit::class);
     }
 
     //    /**
-    //     * @return Commissaire[] Returns an array of Commissaire objects
+    //     * @return Circuit[] Returns an array of Circuit objects
     //     */
     //    public function findByExampleField($value): array
     //    {
@@ -48,7 +31,7 @@ class CommissaireRepository extends ServiceEntityRepository
     //        ;
     //    }
 
-    //    public function findOneBySomeField($value): ?Commissaire
+    //    public function findOneBySomeField($value): ?Circuit
     //    {
     //        return $this->createQueryBuilder('c')
     //            ->andWhere('c.exampleField = :val')

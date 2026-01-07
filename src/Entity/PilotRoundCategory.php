@@ -62,10 +62,17 @@ class PilotRoundCategory
     #[Groups(['pilotRoundCategoryPenalties'])]
     private Collection $penalties;
 
+    /**
+     * @var Collection<int, Ticket>
+     */
+    #[ORM\ManyToMany(targetEntity: Ticket::class, mappedBy: 'pilotRoundCategories')]
+    private Collection $tickets;
+
     public function __construct()
     {
         $this->qualifyings = new ArrayCollection();
         $this->penalties = new ArrayCollection();
+        $this->tickets = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -224,6 +231,33 @@ class PilotRoundCategory
             if ($penalty->getPilotRoundCategory() === $this) {
                 $penalty->setPilotRoundCategory(null);
             }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Ticket>
+     */
+    public function getTickets(): Collection
+    {
+        return $this->tickets;
+    }
+
+    public function addTicket(Ticket $ticket): static
+    {
+        if (!$this->tickets->contains($ticket)) {
+            $this->tickets->add($ticket);
+            $ticket->addPilotRoundCategory($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTicket(Ticket $ticket): static
+    {
+        if ($this->tickets->removeElement($ticket)) {
+            $ticket->removePilotRoundCategory($this);
         }
 
         return $this;
