@@ -30,7 +30,7 @@ class SponsorApiController extends AbstractController
     }
 
     #[Route('', name: 'list', methods: ['GET'])]
-    public function getVisitors(
+    public function getSponsors(
         SponsorBusiness $sponsorBusiness,
         #[MapQueryParameter] ?int $page,
         #[MapQueryParameter] ?int $limit,
@@ -103,7 +103,7 @@ class SponsorApiController extends AbstractController
     }
 
     #[Route('/{sponsor}', name: 'delete', methods: ['DELETE'])]
-    public function deleteMedia(
+    public function deleteSponsor(
         SponsorBusiness $sponsorBusiness,
         Sponsor $sponsor
     ): Response
