@@ -2,8 +2,8 @@
 
 namespace App\Business;
 
-use App\Entity\Ticket;
 use App\Enum\AccountingType;
+use App\Helper\AccountingHelper;
 use App\Repository\AccountingRepository;
 use App\Repository\CategoryRepository;
 use App\Repository\CommissaireRepository;
@@ -32,6 +32,7 @@ readonly class KpiBusiness
         private TicketRepository $ticketRepository,
         private EventRepository $eventRepository,
         private RoundRepository $roundRepository,
+        private AccountingHelper $accountingHelper
     )
     {}
 
@@ -112,19 +113,17 @@ readonly class KpiBusiness
         foreach ($accountings as $accounting) {
             $categoryId = (int)$accounting->getAccountingCategory()?->getId();
 
-            $amount = $accounting->getUnitPrice() * $accounting->getQuantity();
-
-            if ($round !== null && $accounting->getEvent() !== null && $accounting->getRound() === null) {
-                $amount /= $accounting->getEvent()->getRounds()->count();
-            }
+            $amount = $this->getAccountAmount($accounting, $event, $round);
 
             if (!isset($kpi[$categoryId])) {
                 $kpi[$categoryId] = [
                     'accountingCategory' => $accounting->getAccountingCategory(),
+                    'qty' => 0,
                     'amount' => 0,
                 ];
             }
             $kpi[$categoryId]['amount'] += $amount;
+            $kpi[$categoryId]['qty'] += $accounting->getQuantity();
         }
 
         return array_values($kpi);
@@ -147,6 +146,7 @@ readonly class KpiBusiness
 
             $kpi[] = [
                 'accounting' => $accounting,
+                'qty' => $accounting->getQuantity(),
                 'amount' => $price,
             ];
         }
@@ -154,7 +154,7 @@ readonly class KpiBusiness
         return $kpi;
     }
 
-    public function getExpensesTicketsKpi(?int $eventId = null, ?int $roundId = null): array
+    public function getIncomesTicketsKpi(?int $eventId = null, ?int $roundId = null): array
     {
         $event = $eventId !== null ? $this->eventRepository->find($eventId) : null;
         $round = $roundId !== null ? $this->roundRepository->find($roundId) : null;
@@ -233,5 +233,37 @@ readonly class KpiBusiness
         }
 
         return array_merge(...array_values($kpi));
+    }
+
+    public function getAccountingSummariseKpi(?int $eventId = null, ?int $roundId = null): array
+    {
+        $event = $eventId !== null ? $this->eventRepository->find($eventId) : null;
+        $round = $roundId !== null ? $this->roundRepository->find($roundId) : null;
+
+        // Incomes
+        $incomeType = AccountingType::INCOME;
+        $incomes = $this->accountingRepository->findByEventAndRound($incomeType->value, $event, $round);
+        $totalIncomes = 0;
+        foreach ($incomes as $income) {
+            $totalIncomes += $this->accountingHelper->getAccountAmount($income, $round);
+        }
+
+        $incomeTicketsKpi = $this->getIncomesTicketsKpi($eventId, $roundId);
+        foreach ($incomeTicketsKpi as $incomeTicket) {
+            $totalIncomes += $incomeTicket['amount'];
+        }
+
+        // Expenses
+        $expenseType = AccountingType::EXPENSE;
+        $expenses = $this->accountingRepository->findByEventAndRound($expenseType->value, $event, $round);
+        $totalExpenses = 0;
+        foreach ($expenses as $expense) {
+            $totalExpenses += $this->accountingHelper->getAccountAmount($expense, $round);
+        }
+
+        return [
+            'totalIncomes' => $totalIncomes,
+            'totalExpenses' => $totalExpenses,
+        ];
     }
 }
