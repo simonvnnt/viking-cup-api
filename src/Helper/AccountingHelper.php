@@ -7,7 +7,7 @@ use App\Entity\Round;
 
 readonly class AccountingHelper
 {
-    public function getAccountAmount(Accounting $accounting, ?Round $round): float|int
+    public function getAccountingAmount(Accounting $accounting, ?Round $round): float|int
     {
         $amount = $accounting->getUnitPrice() * $accounting->getQuantity();
 

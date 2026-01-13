@@ -113,7 +113,7 @@ readonly class KpiBusiness
         foreach ($accountings as $accounting) {
             $categoryId = (int)$accounting->getAccountingCategory()?->getId();
 
-            $amount = $this->getAccountAmount($accounting, $event, $round);
+            $amount = $this->accountingHelper->getAccountingAmount($accounting, $event, $round);
 
             if (!isset($kpi[$categoryId])) {
                 $kpi[$categoryId] = [
@@ -245,7 +245,7 @@ readonly class KpiBusiness
         $incomes = $this->accountingRepository->findByEventAndRound($incomeType->value, $event, $round);
         $totalIncomes = 0;
         foreach ($incomes as $income) {
-            $totalIncomes += $this->accountingHelper->getAccountAmount($income, $round);
+            $totalIncomes += $this->accountingHelper->getAccountingAmount($income, $round);
         }
 
         $incomeTicketsKpi = $this->getIncomesTicketsKpi($eventId, $roundId);
@@ -258,7 +258,7 @@ readonly class KpiBusiness
         $expenses = $this->accountingRepository->findByEventAndRound($expenseType->value, $event, $round);
         $totalExpenses = 0;
         foreach ($expenses as $expense) {
-            $totalExpenses += $this->accountingHelper->getAccountAmount($expense, $round);
+            $totalExpenses += $this->accountingHelper->getAccountingAmount($expense, $round);
         }
 
         return [
