@@ -20,7 +20,7 @@ readonly class AmountHelper
 
     public function getAmountWithoutFees(float|int $amount): float|int
     {
-        // billetweb fees => 0.29 + 1%
-        return $amount / 1.01 - 0.29;
+        // billetweb fees => 0.29 + 1% du prix du billet
+        return round(($amount - 0.29) / 1.01, 2);
     }
 }
