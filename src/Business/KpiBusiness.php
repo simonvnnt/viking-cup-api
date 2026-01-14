@@ -3,7 +3,7 @@
 namespace App\Business;
 
 use App\Enum\AccountingType;
-use App\Helper\AccountingHelper;
+use App\Helper\AmountHelper;
 use App\Repository\AccountingRepository;
 use App\Repository\CategoryRepository;
 use App\Repository\CommissaireRepository;
@@ -32,7 +32,7 @@ readonly class KpiBusiness
         private TicketRepository $ticketRepository,
         private EventRepository $eventRepository,
         private RoundRepository $roundRepository,
-        private AccountingHelper $accountingHelper
+        private AmountHelper $amountHelper
     )
     {}
 
@@ -113,7 +113,7 @@ readonly class KpiBusiness
         foreach ($accountings as $accounting) {
             $categoryId = (int)$accounting->getAccountingCategory()?->getId();
 
-            $amount = $this->accountingHelper->getAccountingAmount($accounting, $event, $round);
+            $amount = $this->amountHelper->getAccountingAmount($accounting, $round);
 
             if (!isset($kpi[$categoryId])) {
                 $kpi[$categoryId] = [
@@ -201,7 +201,9 @@ readonly class KpiBusiness
                     ];
                 }
 
-                $kpi[$categoryKey][$parentTicket->getTicketLabel()]['amount'] += $parentTicket->getAmount() * count($rounds) / count($childrenRounds);
+                $ticketAmountWithoutFees = $this->amountHelper->getAmountWithoutFees($parentTicket->getAmount());
+
+                $kpi[$categoryKey][$parentTicket->getTicketLabel()]['amount'] += $ticketAmountWithoutFees * count($rounds) / count($childrenRounds);
                 $kpi[$categoryKey][$parentTicket->getTicketLabel()]['qty'] += 1;
             } else {
                 if (in_array($ticket->getId(), $ticketIds)) {
@@ -223,7 +225,9 @@ readonly class KpiBusiness
                     ];
                 }
 
-                $kpi[$categoryKey][$ticket->getTicketLabel()]['amount'] += $ticket->getAmount();
+                $ticketAmountWithoutFees = $this->amountHelper->getAmountWithoutFees($ticket->getAmount());
+
+                $kpi[$categoryKey][$ticket->getTicketLabel()]['amount'] += $ticketAmountWithoutFees;
                 $kpi[$categoryKey][$ticket->getTicketLabel()]['qty'] += 1;
             }
         }
@@ -245,7 +249,7 @@ readonly class KpiBusiness
         $incomes = $this->accountingRepository->findByEventAndRound($incomeType->value, $event, $round);
         $totalIncomes = 0;
         foreach ($incomes as $income) {
-            $totalIncomes += $this->accountingHelper->getAccountingAmount($income, $round);
+            $totalIncomes += $this->amountHelper->getAccountingAmount($income, $round);
         }
 
         $incomeTicketsKpi = $this->getIncomesTicketsKpi($eventId, $roundId);
@@ -258,7 +262,7 @@ readonly class KpiBusiness
         $expenses = $this->accountingRepository->findByEventAndRound($expenseType->value, $event, $round);
         $totalExpenses = 0;
         foreach ($expenses as $expense) {
-            $totalExpenses += $this->accountingHelper->getAccountingAmount($expense, $round);
+            $totalExpenses += $this->amountHelper->getAccountingAmount($expense, $round);
         }
 
         return [

@@ -5,7 +5,7 @@ namespace App\Helper;
 use App\Entity\Accounting;
 use App\Entity\Round;
 
-readonly class AccountingHelper
+readonly class AmountHelper
 {
     public function getAccountingAmount(Accounting $accounting, ?Round $round): float|int
     {
@@ -16,5 +16,11 @@ readonly class AccountingHelper
         }
 
         return $amount;
+    }
+
+    public function getAmountWithoutFees(float|int $amount): float|int
+    {
+        // billetweb fees => 0.29 + 1%
+        return $amount / 1.01 - 0.29;
     }
 }
