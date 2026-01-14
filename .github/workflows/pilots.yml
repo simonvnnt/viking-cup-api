@@ -20,6 +20,6 @@ jobs:
           | jq -r '.token')
 
         # 2. Sync pilots
-        curl -X POST https://bo.viking-cup.fr/api/billetweb/sync/pilots \
+        curl -X POST https://bo.viking-cup.fr/api/ticket/sync/pilots \
           -H "Authorization: Bearer $TOKEN" \
           -H "Content-Type: application/json"
