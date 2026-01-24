@@ -2,10 +2,8 @@
 
 namespace App\Repository;
 
-use App\Entity\RoundDetail;
 use App\Entity\Visitor;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,16 +14,6 @@ class VisitorRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Visitor::class);
-    }
-
-    public function countVisitors(RoundDetail $roundDetail): int
-    {
-        return $this->createQueryBuilder('v')
-            ->select('COUNT(DISTINCT v.id)')
-            ->andWhere('v.roundDetail = :roundDetail')
-            ->setParameter('roundDetail', $roundDetail)
-            ->getQuery()
-            ->getSingleScalarResult();
     }
 
     //    /**

@@ -6,26 +6,16 @@ use App\Enum\AccountingType;
 use App\Helper\AmountHelper;
 use App\Repository\AccountingRepository;
 use App\Repository\CategoryRepository;
-use App\Repository\CommissaireRepository;
 use App\Repository\EventRepository;
-use App\Repository\MediaRepository;
-use App\Repository\PilotRepository;
-use App\Repository\RescuerRepository;
+use App\Repository\PersonRepository;
 use App\Repository\RoundDetailRepository;
 use App\Repository\RoundRepository;
 use App\Repository\TicketRepository;
-use App\Repository\VisitorRepository;
-use App\Repository\VolunteerRepository;
 
 readonly class KpiBusiness
 {
     public function __construct(
-        private PilotRepository $pilotRepository,
-        private VisitorRepository $visitorRepository,
-        private MediaRepository $mediaRepository,
-        private CommissaireRepository $commissaireRepository,
-        private VolunteerRepository $volunteerRepository,
-        private RescuerRepository $rescuerRepository,
+        private PersonRepository $personRepository,
         private CategoryRepository $categoryRepository,
         private RoundDetailRepository $roundDetailRepository,
         private AccountingRepository $accountingRepository,
@@ -46,7 +36,7 @@ readonly class KpiBusiness
         $kpi = [];
 
         foreach ($categories as $category) {
-            $pilotCount = $this->pilotRepository->countPilots($eventId, $roundId, $category);
+            $pilotCount = $this->personRepository->countPilots($eventId, $roundId, $category);
 
             $kpi[] = [
                 'category' => $category,
@@ -63,7 +53,7 @@ readonly class KpiBusiness
         $kpi = [];
 
         foreach ($roundDetails as $roundDetail) {
-            $visitorCount = $this->visitorRepository->countVisitors($roundDetail);
+            $visitorCount = $this->personRepository->countVisitors($roundDetail);
 
             $kpi[] = [
                 'roundDetail' => $roundDetail,
@@ -77,28 +67,28 @@ readonly class KpiBusiness
     public function getMediasCount(?int $eventId = null, ?int $roundId = null): array
     {
         return [
-            'count' => $this->mediaRepository->countMedias($eventId, $roundId)
+            'count' => $this->personRepository->countEntity('medias', $eventId, $roundId)
         ];
     }
 
     public function getCommissairesCount(?int $eventId = null, ?int $roundId = null): array
     {
         return [
-            'count' => $this->commissaireRepository->countCommissaires($eventId, $roundId)
+            'count' => $this->personRepository->countEntity('commissaires', $eventId, $roundId)
         ];
     }
 
     public function getVolunteerCount(?int $eventId = null, ?int $roundId = null): array
     {
         return [
-            'count' => $this->volunteerRepository->countVolunteers($eventId, $roundId)
+            'count' => $this->personRepository->countEntity('volunteers', $eventId, $roundId)
         ];
     }
 
     public function getRescuerCount(?int $eventId = null, ?int $roundId = null): array
     {
         return [
-            'count' => $this->rescuerRepository->countRescuers($eventId, $roundId)
+            'count' => $this->personRepository->countEntity('rescuers', $eventId, $roundId)
         ];
     }
 

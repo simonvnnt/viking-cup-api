@@ -16,23 +16,6 @@ class VolunteerRepository extends ServiceEntityRepository
         parent::__construct($registry, Volunteer::class);
     }
 
-    public function countVolunteers(?int $eventId, ?int $roundId): int
-    {
-        $qb = $this->createQueryBuilder('v')
-            ->select('COUNT(DISTINCT v.id)');
-
-        if ($roundId !== null) {
-            $qb->andWhere('v.round = :roundId')
-                ->setParameter('roundId', $roundId);
-        } elseif ($eventId !== null) {
-            $qb->innerJoin('v.round', 'r')
-                ->andWhere('r.event = :eventId')
-                ->setParameter('eventId', $eventId);
-        }
-
-        return (int) $qb->getQuery()->getSingleScalarResult();
-    }
-
     //    /**
     //     * @return Volunteer[] Returns an array of Volunteer objects
     //     */

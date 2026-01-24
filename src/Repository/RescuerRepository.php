@@ -16,23 +16,6 @@ class RescuerRepository extends ServiceEntityRepository
         parent::__construct($registry, Rescuer::class);
     }
 
-    public function countRescuers(?int $eventId, ?int $roundId): int
-    {
-        $qb = $this->createQueryBuilder('r')
-            ->select('COUNT(DISTINCT r.id)');
-
-        if ($roundId !== null) {
-            $qb->andWhere('r.round = :roundId')
-                ->setParameter('roundId', $roundId);
-        } elseif ($eventId !== null) {
-            $qb->innerJoin('r.round', 'round')
-                ->andWhere('round.event = :eventId')
-                ->setParameter('eventId', $eventId);
-        }
-
-        return (int) $qb->getQuery()->getSingleScalarResult();
-    }
-
     //    /**
     //     * @return Rescuer[] Returns an array of Rescuer objects
     //     */

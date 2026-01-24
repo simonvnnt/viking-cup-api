@@ -2,7 +2,9 @@
 
 namespace App\Repository;
 
+use App\Entity\Category;
 use App\Entity\Person;
+use App\Entity\RoundDetail;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -782,6 +784,56 @@ class PersonRepository extends ServiceEntityRepository
         return $orderedPersons;
     }
 
+    public function countPilots(?int $eventId, ?int $roundId, Category $category): int
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->select('COUNT(DISTINCT p.id)')
+            ->distinct()
+            ->innerJoin('p.pilots', 'pi')
+            ->innerJoin('pi.pilotRoundCategories', 'prc')
+            ->andWhere('prc.category = :category')
+            ->setParameter('category', $category);
+
+        if ($roundId !== null) {
+            $qb->andWhere('prc.round = :roundId')
+                ->setParameter('roundId', $roundId);
+        } elseif ($eventId !== null) {
+            $qb->andWhere('pi.event = :eventId')
+                ->setParameter('eventId', $eventId);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    public function countVisitors(RoundDetail $roundDetail): int
+    {
+        return $this->createQueryBuilder('p')
+            ->select('COUNT(DISTINCT p.id)')
+            ->innerJoin('p.visitors', 'v')
+            ->andWhere('v.roundDetail = :roundDetail')
+            ->setParameter('roundDetail', $roundDetail)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function countEntity(string $entityName, ?int $eventId = null, ?int $roundId = null): int
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->select('COUNT(DISTINCT p.id)')
+            ->innerJoin("p.$entityName", 'e');
+
+        if ($eventId !== null) {
+            $qb->innerJoin('e.round', 'r')
+                ->andWhere('r.event = :eventId')
+                ->setParameter('eventId', $eventId);
+        }
+        if ($roundId !== null) {
+            $qb->andWhere('e.round = :roundId')
+                ->setParameter('roundId', $roundId);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
 
     private function normalize(string $str): string
     {
