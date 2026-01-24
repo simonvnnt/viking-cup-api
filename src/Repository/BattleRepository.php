@@ -26,7 +26,7 @@ class BattleRepository extends ServiceEntityRepository
      * @param int|null $passage
      * @return Battle[]
      */
-    public function getBattleVersus(Round $round, Category $category, int $passage = null): array
+    public function getBattleVersus(Round $round, Category $category, ?int $passage = null): array
     {
         $qb = $this->createQueryBuilder('b')
             ->leftJoin('b.leader', 'prc1')

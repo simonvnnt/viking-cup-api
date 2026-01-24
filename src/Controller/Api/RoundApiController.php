@@ -15,7 +15,7 @@ class RoundApiController extends AbstractController
     #[Route('', name: 'list', methods: ['GET'])]
     public function getRounds(
         RoundBusiness $roundBusiness,
-        Event $event = null
+        ?Event $event = null
     ): Response
     {
         $rounds = $roundBusiness->getRounds($event);

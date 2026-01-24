@@ -33,8 +33,8 @@ class RoundCategoryApiController extends AbstractController
     public function displayTop(
         RoundCategoryBusiness $roundCategoryBusiness,
         Category $category,
-        Event $event = null,
-        Round $round = null
+        ?Event $event = null,
+        ?Round $round = null
     ): Response
     {
         $displayTop = $roundCategoryBusiness->displayTop($category, $round, $event);
